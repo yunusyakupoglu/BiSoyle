@@ -30,3 +30,4 @@ public class ReceiptHub : Hub
 
 
 
+
