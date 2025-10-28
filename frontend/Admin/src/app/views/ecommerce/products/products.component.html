@@ -1,0 +1,134 @@
+<app-page-title title="Ecommerce" subtitle="Products List"></app-page-title>
+
+<div class="row">
+  <div class="col">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between gap-3">
+          <div class="search-bar">
+            <span><i class="bx bx-search-alt"></i></span>
+            <input
+              type="search"
+              class="form-control"
+              id="search"
+              [(ngModel)]="tableService.searchTerm"
+              placeholder="Search ..."
+            />
+          </div>
+          <div>
+            <a
+              routerLink="/ecommerce/create"
+              class="btn btn-primary d-flex align-items-center"
+            >
+              <i class="bx bx-plus me-1"></i>Add Product
+            </a>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="table-responsive table-centered">
+          <table class="table text-nowrap mb-0">
+            <thead class="bg-light bg-opacity-50">
+              <tr>
+                <th>Product Name</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Inventory</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <!-- end thead-->
+            <tbody>
+              @for (item of products$ | async; track $index) {
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <div class="flex-shrink-0 me-3">
+                        <a routerLink="/ecommerce/product/{{ item.id }}"
+                          ><img
+                            [src]="item.productImage"
+                            alt="product-1(1)"
+                            class="img-fluid avatar-sm"
+                        /></a>
+                      </div>
+                      <div class="flex-grow-1">
+                        <h5 class="mt-0 mb-1">
+                          <a
+                            routerLink="/ecommerce/product/{{ item.id }}"
+                            class="text-reset"
+                            >{{ item.productName }}</a
+                          >
+                        </h5>
+                        <span class="fs-13">{{ item.subtitle }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{{ item.category }}</td>
+                  <td>${{ item.price }}</td>
+                  <td
+                    [ngClass]="{
+                      'text-primary': item.inventory == 'Limited',
+                      'text-success': item.inventory == 'In Stock',
+                      'text-danger': item.inventory == 'Out of Stock',
+                    }"
+                  >
+                    <i
+                      class="bx bxs-circle me-1"
+                      [ngClass]="{
+                        'text-primary': item.inventory == 'Limited',
+                        'text-success': item.inventory == 'In Stock',
+                        'text-danger': item.inventory == 'Out of Stock',
+                      }"
+                    ></i
+                    >{{ item.inventory }}
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-soft-secondary me-1"
+                    >
+                      <i class="bx bx-edit fs-18"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-soft-danger">
+                      <i class="bx bx-trash fs-18"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div
+          class="align-items-center justify-content-between row g-0 text-center text-sm-start p-3 border-top"
+        >
+          <div class="col-sm">
+            <div class="text-muted">
+              Showing
+              <span class="fw-semibold">{{ (total$ | async)! }}</span>
+              of
+              <span class="fw-semibold">{{ tableService.endIndex }}</span>
+              Results
+            </div>
+          </div>
+          <div class="col-sm-auto mt-3 mt-sm-0">
+            <ul class="pagination pagination-rounded m-0">
+              <ngb-pagination
+                [collectionSize]="(total$ | async)!"
+                [(page)]="tableService.page"
+                [pageSize]="tableService.pageSize"
+              >
+                <ng-template ngbPaginationPrevious
+                  ><i class="bx bx-left-arrow-alt"></i
+                ></ng-template>
+                <ng-template ngbPaginationNext
+                  ><i class="bx bx-right-arrow-alt"></i
+                ></ng-template>
+              </ngb-pagination>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

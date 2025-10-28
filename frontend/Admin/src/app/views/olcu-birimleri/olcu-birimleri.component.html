@@ -1,0 +1,49 @@
+<div class="row">
+  <div class="col-xl-12">
+    <div class="card">
+      <div class="card-header">
+        <h4 class="card-title mb-0">Ölçü Birimleri</h4>
+      </div>
+      <div class="card-body">
+        <!-- Ölçü Birimi Ekleme Formu -->
+        <div class="mb-4">
+          <h5>Yeni Ölçü Birimi Ekle</h5>
+          <div class="row">
+            <div class="col-md-8">
+              <label class="form-label">Ölçü Birimi Adı</label>
+              <input type="text" class="form-control" [(ngModel)]="olcuAdi" placeholder="Örneğin: Kilogram, Metre, Adet">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">&nbsp;</label>
+              <button type="button" class="btn btn-primary w-100" (click)="olcuEkle()">Ekle</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ölçü Birimleri Listesi -->
+        <div *ngIf="yukleniyor" class="text-center">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Yükleniyor...</span>
+          </div>
+        </div>
+
+        <div *ngIf="!yukleniyor && olcuBirimleri.length === 0" class="alert alert-info">
+          Henüz ölçü birimi eklenmemiş.
+        </div>
+
+        <div *ngIf="!yukleniyor && olcuBirimleri.length > 0" class="row">
+          <div class="col-md-3 mb-3" *ngFor="let olcu of olcuBirimleri">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">{{ olcu.olcu_birimi_adi }}</h5>
+                <button class="btn btn-sm btn-danger" (click)="olcuSil(olcu.id)">Sil</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+

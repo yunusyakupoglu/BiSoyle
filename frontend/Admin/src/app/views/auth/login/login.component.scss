@@ -1,0 +1,46 @@
+.account-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+}
+
+.account-page-bg {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pera-title {
+  color: #fff;
+  font-weight: 600;
+}
+
+.auth-image {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.auth-logo {
+  display: inline-block;
+}
+
+[data-bs-theme="dark"] .auth-logo-dark {
+  display: none;
+}
+
+[data-bs-theme="dark"] .auth-logo-light {
+  display: block;
+}
+
+[data-bs-theme="light"] .auth-logo-dark {
+  display: block;
+}
+
+[data-bs-theme="light"] .auth-logo-light {
+  display: none;
+}
+
+
+

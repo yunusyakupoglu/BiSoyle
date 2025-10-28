@@ -1,0 +1,134 @@
+<div class="container-fluid">
+  <!-- Page Title -->
+  <div class="row">
+    <div class="col-sm-12">
+      <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+        <h4 class="mb-sm-0">Kullanıcı Yönetimi</h4>
+        <div class="page-title-right">
+          <ol class="breadcrumb m-0">
+            <li class="breadcrumb-item"><a href="javascript: void(0);">Yönetim</a></li>
+            <li class="breadcrumb-item active">Kullanıcılar</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kullanıcılar Listesi -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Kullanıcılar</h5>
+            <button class="btn btn-primary" (click)="newUser(content)">
+              <i class="mdi mdi-plus"></i> Yeni Kullanıcı
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Arama -->
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <input 
+                type="text" 
+                class="form-control" 
+                placeholder="Ara..." 
+                [(ngModel)]="searchTerm"
+                (input)="search()">
+            </div>
+          </div>
+
+          <!-- Tablo -->
+          <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Ad</th>
+                  <th>Soyad</th>
+                  <th>Kullanıcı Adı</th>
+                  <th>Rol</th>
+                  <th>İşlemler</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let k of filteredKullanicilar">
+                  <td>{{ k.id }}</td>
+                  <td>{{ k.ad }}</td>
+                  <td>{{ k.soyad }}</td>
+                  <td>{{ k.kullanici_adi }}</td>
+                  <td><span class="badge bg-primary">{{ getRolAdi(k.rol_id) }}</span></td>
+                  <td>
+                    <button class="btn btn-sm btn-warning me-1" (click)="edit(k, content)">
+                      <i class="mdi mdi-pencil"></i> Düzenle
+                    </button>
+                    <button class="btn btn-sm btn-danger" (click)="delete(k.id)">
+                      <i class="mdi mdi-delete"></i> Sil
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="filteredKullanicilar.length === 0">
+                  <td colspan="6" class="text-center">Kullanıcı bulunamadı</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Template -->
+<ng-template #content let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">{{ isEditMode ? 'Kullanıcı Düzenle' : 'Yeni Kullanıcı' }}</h5>
+    <button type="button" class="btn-close" (click)="modal.dismiss('Cross click')"></button>
+  </div>
+  <div class="modal-body">
+    <form>
+      <div class="mb-3">
+        <label class="form-label">Ad *</label>
+        <input type="text" class="form-control" [(ngModel)]="currentKullanici.ad" name="ad">
+      </div>
+      
+      <div class="mb-3">
+        <label class="form-label">Soyad *</label>
+        <input type="text" class="form-control" [(ngModel)]="currentKullanici.soyad" name="soyad">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Kullanıcı Adı *</label>
+        <input 
+          type="text" 
+          class="form-control" 
+          [(ngModel)]="currentKullanici.kullanici_adi" 
+          name="kullanici_adi"
+          [disabled]="isEditMode">
+      </div>
+
+      <div class="mb-3" *ngIf="!isEditMode">
+        <label class="form-label">Şifre *</label>
+        <input 
+          type="password" 
+          class="form-control" 
+          [(ngModel)]="currentKullanici.parola" 
+          name="parola">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Rol *</label>
+        <select class="form-select" [(ngModel)]="currentKullanici.rol_id" name="rol_id">
+          <option *ngFor="let r of roller" [value]="r.id">{{ r.rol_adi }}</option>
+        </select>
+      </div>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modal.close()">İptal</button>
+    <button type="button" class="btn btn-primary" (click)="save(content)">Kaydet</button>
+  </div>
+</ng-template>
+
+

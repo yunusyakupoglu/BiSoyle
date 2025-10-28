@@ -1,0 +1,37 @@
+<div class="tab-pane" id="team-grid">
+  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-5 gx-3">
+    @for (item of customers$ | async; track $index) {
+      <div class="col">
+        <div class="card">
+          <div class="card-body">
+            <div class="text-center">
+              <img
+                [src]="item.image"
+                alt="avatar-1"
+                class="img-fluid avatar-xxl img-thumbnail rounded-circle avatar-border"
+              />
+              <h4 class="mt-3">
+                <a href="javascript:void(0);">{{ item.name }}</a>
+              </h4>
+              <a href="javascript:void(0);" class="mb-1 d-inline-block"
+                ><i class="bx bx-location-plus text-danger fs-14 me-1"></i
+                >{{ item.location }}</a
+              >
+              <br />
+              <a href="javascript:void(0);"
+                ><i class="bx bx-phone-call text-success fs-14 me-1"></i
+                >{{ item.phone.substring(item.phone.indexOf('-') + 1).trim() }}
+              </a>
+              <br />
+              <a
+                href="javascript:void(0);"
+                class="btn btn-sm btn-outline-primary mt-2"
+                >View All Details</a
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

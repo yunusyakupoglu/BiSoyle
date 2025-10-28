@@ -1,0 +1,83 @@
+<div class="row">
+  <div class="col-xl-12">
+    <div class="card">
+      <div class="card-header">
+        <h4 class="card-title mb-0">Ürünler</h4>
+      </div>
+      <div class="card-body">
+        <!-- Ürün Ekleme Formu -->
+        <div class="mb-4">
+          <h5>Yeni Ürün Ekle</h5>
+          <div class="row">
+            <div class="col-md-3">
+              <label class="form-label">Ürün Adı *</label>
+              <input type="text" class="form-control" [(ngModel)]="urunAdi" placeholder="Ürün adını girin">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Birim Fiyat (₺) *</label>
+              <input type="number" class="form-control" [(ngModel)]="birimFiyat" placeholder="0" step="0.01">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Kategori *</label>
+              <select class="form-select" [(ngModel)]="kategoriId">
+                <option [value]="0">Kategori Seçin</option>
+                <option *ngFor="let kat of kategoriler" [value]="kat.id">{{ kat.kategori_adi }}</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Ölçü Birimi *</label>
+              <select class="form-select" [(ngModel)]="olcuBirimiId">
+                <option [value]="0">Birim Seçin</option>
+                <option *ngFor="let ob of olcuBirimleri" [value]="ob.id">{{ ob.olcu_birimi_adi }}</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">&nbsp;</label>
+              <button type="button" class="btn btn-primary w-100" (click)="urunEkle()">Ekle</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ürünler Listesi -->
+        <div *ngIf="yukleniyor" class="text-center">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Yükleniyor...</span>
+          </div>
+        </div>
+
+        <div *ngIf="!yukleniyor && urunler.length === 0" class="alert alert-info">
+          Henüz ürün eklenmemiş.
+        </div>
+
+        <div *ngIf="!yukleniyor && urunler.length > 0" class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Ürün Adı</th>
+                <th>Birim Fiyat</th>
+                <th>Kategori</th>
+                <th>Ölçü Birimi</th>
+                <th>İşlemler</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let urun of urunler">
+                <td>{{ urun.id }}</td>
+                <td>{{ urun.urun_adi }}</td>
+                <td>₺{{ urun.birim_fiyat.toFixed(2) }}</td>
+                <td>{{ getKategoriAdi(urun.kategori_id) }}</td>
+                <td>{{ getOlcuBirimiAdi(urun.olcu_birimi_id) }}</td>
+                <td>
+                  <button class="btn btn-sm btn-danger" (click)="urunSil(urun.id)">Sil</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+

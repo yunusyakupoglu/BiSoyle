@@ -1,0 +1,186 @@
+<div class="container-fluid">
+  <!-- Page Title -->
+  <div class="row">
+    <div class="col-sm-12">
+      <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+        <h4 class="mb-sm-0">İşlem Yönetimi</h4>
+        <div class="page-title-right">
+          <ol class="breadcrumb m-0">
+            <li class="breadcrumb-item"><a href="javascript: void(0);">Yönetim</a></li>
+            <li class="breadcrumb-item active">İşlemler</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Yeni İşlem Formu -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Yeni İşlem Ekle</h5>
+        </div>
+        <div class="card-body">
+          <form (ngSubmit)="islemEkle()">
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label class="form-label">İşlem Kodu</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  [(ngModel)]="islemKodu" 
+                  name="islemKodu"
+                  placeholder="Otomatik oluşturulacak">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Toplam Tutar</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  [value]="toplamTutar.toFixed(2)" 
+                  readonly>
+              </div>
+            </div>
+
+            <!-- Ürün Listesi -->
+            <div class="table-responsive mb-3">
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Ürün</th>
+                    <th>Miktar</th>
+                    <th>Birim Fiyat</th>
+                    <th>İşlem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of seciliUrunler; let i = index">
+                    <td>
+                      <select 
+                        class="form-control" 
+                        [(ngModel)]="item.urun_id" 
+                        [name]="'urun_' + i"
+                        (ngModelChange)="onUrunSelected(i, $event)">
+                        <option [value]="0">Ürün Seçin</option>
+                        <option *ngFor="let urun of urunler" [value]="urun.id">
+                          {{ urun.urun_adi }}
+                        </option>
+                      </select>
+                    </td>
+                    <td>
+                      <input 
+                        type="number" 
+                        class="form-control" 
+                        [(ngModel)]="item.miktar" 
+                        [name]="'miktar_' + i"
+                        (ngModelChange)="hesaplaToplamTutar()"
+                        min="0" 
+                        step="0.01">
+                    </td>
+                    <td>
+                      <input 
+                        type="number" 
+                        class="form-control" 
+                        [(ngModel)]="item.birim_fiyat" 
+                        [name]="'birim_fiyat_' + i"
+                        readonly>
+                    </td>
+                    <td>
+                      <button 
+                        type="button" 
+                        class="btn btn-danger btn-sm" 
+                        (click)="urunCikar(i)">
+                        <i class="mdi mdi-delete"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="seciliUrunler.length === 0">
+                    <td colspan="4" class="text-center">
+                      <button type="button" class="btn btn-primary" (click)="urunEkle()">
+                        <i class="mdi mdi-plus"></i> Ürün Ekle
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <button type="button" class="btn btn-secondary" (click)="urunEkle()">
+                <i class="mdi mdi-plus"></i> Ürün Ekle
+              </button>
+              <button type="submit" class="btn btn-primary">
+                <i class="mdi mdi-check"></i> İşlem Ekle
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- İşlemler Listesi -->
+  <div class="row mt-3">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">İşlemler</h5>
+        </div>
+        <div class="card-body">
+          <!-- Loading -->
+          <div *ngIf="yukleniyor" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Yükleniyor...</span>
+            </div>
+          </div>
+
+          <!-- İşlemler Tablosu -->
+          <div *ngIf="!yukleniyor" class="table-responsive">
+            <table class="table table-striped table-bordered">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>İşlem Kodu</th>
+                  <th>Ürün Detayları</th>
+                  <th>Toplam Tutar</th>
+                  <th>Tarih</th>
+                  <th>İşlem</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let islem of islemler">
+                  <td>{{ islem.id }}</td>
+                  <td><strong>{{ islem.islem_kodu }}</strong></td>
+                  <td>
+                    <div *ngFor="let item of parseUrunDetaylari(islem.urun_detaylari)">
+                      <span class="badge bg-primary">{{ getUrunAdi(item.urun_id) }}</span>
+                      <small class="text-muted ms-2">
+                        {{ item.miktar }} x {{ item.birim_fiyat }}₺ = {{ (item.miktar * item.birim_fiyat).toFixed(2) }}₺
+                      </small>
+                    </div>
+                  </td>
+                  <td><strong>{{ islem.toplam_tutar.toFixed(2) }}₺</strong></td>
+                  <td>{{ islem.created_at | date:'dd.MM.yyyy HH:mm' }}</td>
+                  <td>
+                    <button 
+                      class="btn btn-danger btn-sm" 
+                      (click)="islemSil(islem.id)">
+                      <i class="mdi mdi-delete"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="islemler.length === 0">
+                  <td colspan="6" class="text-center">Henüz işlem yok</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+

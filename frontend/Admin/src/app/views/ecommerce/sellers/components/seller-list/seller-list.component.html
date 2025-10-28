@@ -1,0 +1,93 @@
+<div class="tab-pane show" id="seller-list">
+  <div class="card overflow-hidden">
+    <div class="table-responsive table-centered text-nowrap">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Seller</th>
+            <th>Store Name</th>
+            <th>Rating</th>
+            <th>Products</th>
+            <th>Wallet Balance</th>
+            <th>Create Date</th>
+            <th>Revenue</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <!-- end thead-->
+        <tbody>
+          @for (data of sellers$ | async; track $index) {
+            <tr>
+              <td>
+                <div class="d-flex align-items-center gap-1">
+                  <img
+                    [src]="data.image"
+                    alt="avatar-1"
+                    class="img-fluid avatar-sm rounded-circle avatar-border me-1"
+                  />
+                  <a href="javascript:void(0);">{{ data.name }}</a>
+                </div>
+              </td>
+              <td>{{ data.store_name }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [ngClass]="{
+                    'badge-soft-success': data.rating > 4,
+                    'badge-soft-warning': data.rating > 2 && data.rating <= 4,
+                    'badge-soft-danger': data.rating <= 2,
+                  }"
+                  ><i class="bx bxs-star me-1"></i>{{ data.rating }}</span
+                >
+              </td>
+              <td>{{ data.products }}</td>
+              <td>${{ data.wallet_balance }}</td>
+              <td>{{ data.create_date }}</td>
+              <td>${{ data.revenue }}</td>
+              <td>
+                <a
+                  href="javascript:void(0);"
+                  class="btn btn-sm btn-soft-primary me-1"
+                  ><i class="bx bx-edit fs-18"></i
+                ></a>
+                <a href="javascript:void(0);" class="btn btn-sm btn-soft-danger"
+                  ><i class="bx bx-trash fs-18"></i
+                ></a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div
+      class="align-items-center justify-content-between row g-0 text-center text-sm-start p-3 border-top"
+    >
+      <div class="col-sm">
+        <div class="text-muted">
+          Showing
+          <span class="fw-semibold">{{ (total$ | async)! }}</span>
+          of
+          <span class="fw-semibold">{{ tableService.endIndex }}</span>
+          Results
+        </div>
+      </div>
+      <div class="col-sm-auto mt-3 mt-sm-0">
+        <ul class="pagination pagination-rounded m-0">
+          <ngb-pagination
+            [collectionSize]="(total$ | async)!"
+            [(page)]="tableService.page"
+            [pageSize]="tableService.pageSize"
+          >
+            <ng-template ngbPaginationPrevious
+              ><i class="bx bx-left-arrow-alt"></i
+            ></ng-template>
+            <ng-template ngbPaginationNext
+              ><i class="bx bx-right-arrow-alt"></i
+            ></ng-template>
+          </ngb-pagination>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

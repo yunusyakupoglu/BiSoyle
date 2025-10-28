@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+
+  gateway:
+    build:
+      context: ./gateway
+    ports:
+      - "5000:5000"
+    depends_on:
+      - receipt-service
+      - product-service
+      - transaction-service
+
+  receipt-service:
+    build:
+      context: ./services/receipt-service
+    ports:
+      - "5001:5001"
+    depends_on:
+      - rabbitmq
+
+  product-service:
+    build:
+      context: ./services/product-service
+    ports:
+      - "5002:5002"
+    depends_on:
+      - rabbitmq
+
+  transaction-service:
+    build:
+      context: ./services/transaction-service
+    ports:
+      - "5003:5003"
+    depends_on:
+      - rabbitmq
+
+  voice-service:
+    build:
+      context: ./services/voice-service
+    ports:
+      - "8765:8765"
+    volumes:
+      - ./voice-models:/app/models
+
+networks:
+  default:
+    name: bisoyle-network
+
+
+
+
+

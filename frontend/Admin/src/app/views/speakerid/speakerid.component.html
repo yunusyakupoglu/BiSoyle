@@ -1,0 +1,148 @@
+<div class="container-xxl">
+  
+  <!-- Page Title -->
+  <div class="row">
+    <div class="col-12">
+      <div class="page-title-box">
+        <h4 class="page-title">Konuşmacı Tanıma Sistemi</h4>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row">
+    <div class="col-md-6 col-xl-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="fs-14 mb-1">Kayıtlı Kişi Sayısı</div>
+          </div>
+          <div class="d-flex align-items-baseline mb-2">
+            <div class="fs-22 mb-0 me-2 fw-semibold text-black">{{ totalSpeakers }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-6 col-xl-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="fs-14 mb-1">Sistem Durumu</div>
+          </div>
+          <div class="d-flex align-items-baseline mb-2">
+            <div class="fs-22 mb-0 me-2 fw-semibold text-success">Aktif</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enroll Section -->
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header">
+          <h4 class="card-title">📝 Kişi Kaydetme</h4>
+        </div>
+        <div class="card-body">
+          <form>
+            <div class="mb-3">
+              <label class="form-label" for="enroll-name">Kişi Adı</label>
+              <input type="text" class="form-control" id="enroll-name" [(ngModel)]="enrollName" name="enrollName" placeholder="Örn: Ali Yılmaz">
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label" for="enroll-file">Ses Dosyası (WAV/MP3)</label>
+              <input type="file" class="form-control" id="enroll-file" (change)="onEnrollFileChange($event)" accept="audio/*">
+            </div>
+            
+            <button type="button" class="btn btn-success" (click)="enrollSpeaker()">
+              <iconify-icon icon="iconamoon:check-duotone" class="me-1"></iconify-icon>
+              Kaydet
+            </button>
+          </form>
+          
+          <div *ngIf="enrollStatus" class="alert alert-{{enrollStatusType}} mt-3" [innerHTML]="enrollStatus"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Identify Section -->
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header">
+          <h4 class="card-title">🔍 Konuşmacı Tanıma (Dosya)</h4>
+        </div>
+        <div class="card-body">
+          <form>
+            <div class="mb-3">
+              <label class="form-label" for="identify-file">Tanımlanacak Ses Dosyası</label>
+              <input type="file" class="form-control" id="identify-file" (change)="onIdentifyFileChange($event)" accept="audio/*">
+            </div>
+            
+            <button type="button" class="btn btn-primary" (click)="identifySpeaker()">
+              <iconify-icon icon="iconamoon:search-duotone" class="me-1"></iconify-icon>
+              Tanımla
+            </button>
+          </form>
+          
+          <div *ngIf="identifyResult" class="alert alert-{{identifyResultType}} mt-3" [innerHTML]="identifyResult"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Identify Section -->
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header">
+          <h4 class="card-title">🎙️ Canlı Konuşmacı Tanıma</h4>
+        </div>
+        <div class="card-body">
+          <div class="btn-group mb-3">
+            <button type="button" class="btn btn-success" (click)="startLive()" [disabled]="isLiveActive">
+              <iconify-icon icon="iconamoon:player-play-duotone" class="me-1"></iconify-icon>
+              Başlat
+            </button>
+            <button type="button" class="btn btn-secondary" (click)="stopLive()" [disabled]="!isLiveActive">
+              <iconify-icon icon="iconamoon:player-stop-duotone" class="me-1"></iconify-icon>
+              Durdur
+            </button>
+            <span class="badge ms-2 d-flex align-items-center" 
+                  [ngClass]="isLiveActive ? 'bg-success' : 'bg-secondary'">
+              {{ liveIndicator }}
+            </span>
+          </div>
+          
+          <div class="live-speaker-box">
+            <div class="live-speaker-label">ŞU ANDA KONUŞAN</div>
+            <div class="live-speaker-name">{{ liveSpeaker }}</div>
+            <div class="live-speaker-score">{{ liveScore }}</div>
+          </div>
+          
+          <div class="table-responsive mt-3">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Kişi</th>
+                  <th class="text-end">Benzerlik Skoru</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of liveTop">
+                  <td>{{ item[0] }}</td>
+                  <td class="text-end">{{ (item[1] * 100).toFixed(1) }}% ({{ item[1].toFixed(3) }})</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+

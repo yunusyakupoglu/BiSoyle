@@ -1,0 +1,132 @@
+<div class="tab-pane show" id="generalDetail">
+  <form
+    [formGroup]="generalForm"
+    id="generalDetailForm"
+    method="post"
+    action="#"
+  >
+    <div class="row">
+      <div class="col-lg-6">
+        <div class="mb-3">
+          <label class="form-label" for="productName">Product Name</label>
+          <input
+            type="text"
+            class="form-control"
+            id="productName"
+            placeholder="Enter product name"
+          />
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="mb-3">
+          <label class="form-label" for="referenceName">Reference</label>
+          <input
+            type="text"
+            class="form-control"
+            id="referenceName"
+            placeholder="Enter reference name"
+          />
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="mb-3">
+          <label class="form-label">Product Description</label>
+          <div id="snow-editor">
+            <quill-editor
+              id="snow-editor"
+              formControlName="content"
+              #quillEditor
+              theme="snow"
+              [modules]="editorConfig"
+              style="height: 195px"
+              class="w-100"
+            ></quill-editor>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="mb-3">
+          <label for="productSummary" class="form-label">Product Summary</label>
+          <textarea
+            class="form-control"
+            id="productSummary"
+            rows="5"
+          ></textarea>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="mb-3">
+          <label for="productSummary" class="form-label">Categories</label>
+          <select
+            selectFormInput
+            class="form-control select2"
+            data-toggle="select2"
+          >
+            <optgroup label="">
+              <option value="select">Select</option>
+            </optgroup>
+            <optgroup label="Shopping">
+              <option value="shopping1">Shopping 1</option>
+              <option value="shopping2">Shopping 2</option>
+              <option value="shopping3">Shopping 3</option>
+              <option value="shopping4">Shopping 4</option>
+            </optgroup>
+            <optgroup label="CRM">
+              <option value="CRM1">CRM 1</option>
+              <option value="CRM2">CRM 2</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="price">Price</label>
+          <input
+            type="text"
+            class="form-control"
+            id="price"
+            placeholder="Enter amount"
+          />
+        </div>
+      </div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Status</label><br />
+      <div class="form-check form-check-inline">
+        <input
+          class="form-check-input"
+          name="radio"
+          type="radio"
+          id="onlineStatus"
+          value="Online"
+          checked
+        />
+        <label class="form-check-label" for="onlineStatus">Online</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input
+          class="form-check-input"
+          name="radio"
+          type="radio"
+          id="offlineStatus"
+          value="Offline"
+        />
+        <label class="form-check-label" for="offlineStatus">Offline</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input
+          class="form-check-input"
+          name="radio"
+          type="radio"
+          id="draftStatus"
+          value="Draft"
+        />
+        <label class="form-check-label" for="draftStatus">Draft</label>
+      </div>
+    </div>
+    <div class="mb-3">
+      <label for="comment" class="form-label">Comment</label>
+      <textarea class="form-control" id="comment" rows="3"></textarea>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,52 @@
+.live-speaker-box {
+  margin-top: 20px;
+  padding: 32px 24px;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+  border: 2px solid var(--bs-primary);
+  text-align: center;
+  box-shadow: 0 5px 10px rgba(28, 132, 238, 0.12);
+}
+
+.live-speaker-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.live-speaker-name {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--bs-primary);
+  margin-bottom: 8px;
+  text-shadow: 0 2px 4px rgba(28, 132, 238, 0.1);
+}
+
+.live-speaker-score {
+  font-size: 1.125rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+[data-bs-theme="dark"] .live-speaker-box {
+  background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+  border-color: #3b82f6;
+}
+
+[data-bs-theme="dark"] .live-speaker-label {
+  color: #94a3b8;
+}
+
+[data-bs-theme="dark"] .live-speaker-name {
+  color: #60a5fa;
+  text-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+[data-bs-theme="dark"] .live-speaker-score {
+  color: #cbd5e1;
+}
+
+

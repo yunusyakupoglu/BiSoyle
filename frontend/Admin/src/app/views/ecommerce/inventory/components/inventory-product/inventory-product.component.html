@@ -1,0 +1,82 @@
+<div class="card">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-12">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <a href="javascript:void(0);" class="btn btn-secondary"
+            ><i class="bx bx-export me-1"></i>Export</a
+          >
+          <a href="javascript:void(0);" class="btn btn-secondary"
+            ><i class="bx bx-import me-1"></i>Import</a
+          >
+
+          <a
+            routerLink="/ecommerce/create"
+            class="btn btn-primary d-inline-flex align-items-center ms-md-auto"
+            ><i class="bx bx-plus me-1"></i>Add Product</a
+          >
+        </div>
+      </div>
+    </div>
+    <div class="table-responsive table-centered mt-3">
+      <table class="table text-nowrap mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Product</th>
+            <th>Condition</th>
+            <th>Location</th>
+            <th>Available</th>
+            <th>Reserved</th>
+            <th>On hand</th>
+            <th>Modified</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (data of inventoryData; track $index) {
+            <tr>
+              <td>{{ data.id }}</td>
+              <td>
+                <div class="d-flex align-items-center">
+                  <div class="flex-shrink-0 me-3">
+                    <a routerLink="/ecommerce/product/{{ data.product.id }}"
+                      ><img
+                        [src]="data.product.image"
+                        alt="product-1(1)"
+                        class="img-fluid avatar-sm"
+                    /></a>
+                  </div>
+                  <div class="flex-grow-1">
+                    <h5 class="mt-0 mb-1">
+                      {{ data.product.name }}
+                    </h5>
+                    <span class="fs-13"
+                      >Added: {{ data.product.added_date }}</span
+                    >
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span
+                  class="badge"
+                  [ngClass]="{
+                    'badge-soft-success': data.condition == 'New',
+                    'badge-soft-warning': data.condition == 'Return',
+                    'badge-soft-danger': data.condition == 'Damaged',
+                  }"
+                  >{{ data.condition }}</span
+                >
+              </td>
+              <td>{{ data.location }}</td>
+              <td>{{ data.available }}</td>
+              <td>{{ data.reserved }}</td>
+              <td>{{ data.on_hand }}</td>
+              <td>{{ data.modified }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <!-- end table-->
+    </div>
+  </div>
+</div>

@@ -1,0 +1,127 @@
+<app-page-title title="Ecommerce" subtitle="Customers List" />
+
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <div
+          class="d-flex flex-wrap justify-content-between align-items-center gap-2"
+        >
+          <div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <label for="inputPassword2" class="visually-hidden">Search</label>
+              <div class="search-bar me-3">
+                <span><i class="bx bx-search-alt"></i></span>
+                <input
+                  type="search"
+                  class="form-control"
+                  id="search"
+                  [(ngModel)]="tableService.searchTerm"
+                  placeholder="Search ..."
+                />
+              </div>
+
+              <label for="status-select" class="me-2">Sort By</label>
+              <div class="me-sm-3">
+                <select
+                  class="form-select my-1 my-md-0"
+                  id="status-select"
+                  [(ngModel)]="sort"
+                  (change)="onSort()"
+                >
+                  <option selected="">All</option>
+                  <option value="name">Name</option>
+                  <option value="date">Joining Date</option>
+                  <option value="phone">Phone</option>
+                  <option value="orders">Orders</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div
+              class="d-flex flex-wrap gap-2 justify-content-md-end align-items-center"
+            >
+              <ul
+                ngbNav
+                #nav="ngbNav"
+                [(activeId)]="active"
+                class="nav nav-pills bg-transparent gap-1 p-0"
+              >
+                <li [ngbNavItem]="1" class="nav-item">
+                  <a
+                    ngbNavLink
+                    class="nav-link"
+                    data-bs-toggle="tab"
+                    aria-expanded="false"
+                    placement="top"
+                    ngbTooltip="Grid"
+                  >
+                    <i class="bx bx-grid-alt"></i>
+                  </a>
+                  <ng-template ngbNavContent>
+                    <customer-grid />
+                  </ng-template>
+                </li>
+                <li [ngbNavItem]="2" class="nav-item">
+                  <a
+                    ngbNavLink
+                    class="nav-link"
+                    data-bs-toggle="tab"
+                    aria-expanded="false"
+                    placement="top"
+                    ngbTooltip="List"
+                  >
+                    <i class="bx bx-list-ul"></i>
+                  </a>
+                  <ng-template ngbNavContent>
+                    <customer-list />
+                  </ng-template>
+                </li>
+              </ul>
+
+              <div ngbDropdown class="dropdown">
+                <a
+                  ngbDropdownToggle
+                  class="dropdown-toggle btn btn-soft-success arrow-none"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  <i class="bx bx-sort me-1"></i>Filter
+                </a>
+                <div ngbDropdownMenu class="dropdown-menu dropdown-menu-end">
+                  <a
+                    href="javascript:void(0);"
+                    class="dropdown-item"
+                    (click)="sortData('date')"
+                    >By Date</a
+                  >
+                  <a
+                    href="javascript:void(0);"
+                    class="dropdown-item"
+                    (click)="sortData('orders')"
+                    >By Order ID</a
+                  >
+                  <a
+                    href="javascript:void(0);"
+                    class="dropdown-item"
+                    (click)="sortData('location')"
+                    >By City</a
+                  >
+                </div>
+              </div>
+
+              <a href="javascript:void(0);" class="btn btn-danger">
+                <i class="bi bi-plus-circle me-1"></i>Add Customer
+              </a>
+            </div>
+          </div>
+          <!-- end col-->
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- end col-->
+</div>
+
+<div [ngbNavOutlet]="nav" class="tab-content pt-0"></div>
