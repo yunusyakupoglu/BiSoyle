@@ -13,28 +13,28 @@ INSERT INTO unit_of_measures ("BirimAdi", "Kisaltma", "Aktif", "OlusturmaTarihi"
 ('Dilim', 'Dlm', true, NOW())
 ON CONFLICT ("BirimAdi") DO NOTHING;
 
--- Kategoriler
-INSERT INTO categories ("KategoriAdi", "Aciklama", "Aktif") VALUES 
-('Hamur İşleri', 'Tüm hamur işleri ve unlu mamuller', true),
-('Tatlılar', 'Tatlı ürünler', true),
-('Kahvaltılık', 'Kahvaltı ürünleri', true),
-('İçecekler', 'Sıcak ve soğuk içecekler', true),
-('Süt Ürünleri', 'Peynir, yoğurt vs.', true)
-ON CONFLICT ("KategoriAdi") DO NOTHING;
+-- Kategoriler (TenantId=1 varsayılan firma için)
+INSERT INTO categories ("TenantId", "KategoriAdi", "Aciklama", "Aktif") VALUES 
+(1, 'Hamur İşleri', 'Tüm hamur işleri ve unlu mamuller', true),
+(1, 'Tatlılar', 'Tatlı ürünler', true),
+(1, 'Kahvaltılık', 'Kahvaltı ürünleri', true),
+(1, 'İçecekler', 'Sıcak ve soğuk içecekler', true),
+(1, 'Süt Ürünleri', 'Peynir, yoğurt vs.', true)
+ON CONFLICT ("TenantId", "KategoriAdi") DO NOTHING;
 
--- Ürünler
-INSERT INTO products ("UrunAdi", "BirimFiyat", "OlcuBirimi", "StokMiktari", "Aktif", "OlusturmaTarihi") VALUES 
-('Çikolatalı kruvasan', 15.00, 'Adet', 100, true, NOW()),
-('Patatesli poğaça', 10.00, 'Adet', 200, true, NOW()),
-('Sade simit', 5.00, 'Adet', 300, true, NOW()),
-('Peynirli börek', 12.00, 'Adet', 150, true, NOW()),
-('Cevizli baklava', 500.00, 'Kg', 50, true, NOW()),
-('Sütlaç', 8.00, 'Adet', 80, true, NOW()),
-('Beyaz peynir', 100.00, 'Kg', 30, true, NOW()),
-('Kaşar peyniri', 120.00, 'Kg', 25, true, NOW()),
-('Ayran', 3.00, 'Litre', 100, true, NOW()),
-('Türk kahvesi', 15.00, 'Adet', 200, true, NOW())
-ON CONFLICT DO NOTHING;
+-- Ürünler (TenantId=1 varsayılan firma için)
+INSERT INTO products ("TenantId", "UrunAdi", "BirimFiyat", "OlcuBirimi", "StokMiktari", "Aktif", "OlusturmaTarihi") VALUES 
+(1, 'Çikolatalı kruvasan', 15.00, 'Adet', 100, true, NOW()),
+(1, 'Patatesli poğaça', 10.00, 'Adet', 200, true, NOW()),
+(1, 'Sade simit', 5.00, 'Adet', 300, true, NOW()),
+(1, 'Peynirli börek', 12.00, 'Adet', 150, true, NOW()),
+(1, 'Cevizli baklava', 500.00, 'Kg', 50, true, NOW()),
+(1, 'Sütlaç', 8.00, 'Adet', 80, true, NOW()),
+(1, 'Beyaz peynir', 100.00, 'Kg', 30, true, NOW()),
+(1, 'Kaşar peyniri', 120.00, 'Kg', 25, true, NOW()),
+(1, 'Ayran', 3.00, 'Litre', 100, true, NOW()),
+(1, 'Türk kahvesi', 15.00, 'Adet', 200, true, NOW())
+ON CONFLICT ("TenantId", "UrunAdi") DO NOTHING;
 
 -- bisoyle_transaction veritabanı
 \c bisoyle_transaction;

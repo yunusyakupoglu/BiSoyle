@@ -160,7 +160,8 @@ namespace BiSoyle.Product.Service.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.HasIndex("TenantId", "UrunAdi");
+                    b.HasIndex("TenantId", "UrunAdi")
+                        .IsUnique();
 
                     b.ToTable("products", (string)null);
                 });
