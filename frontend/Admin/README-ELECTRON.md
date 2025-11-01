@@ -18,6 +18,12 @@ npm install
 
 Electron uygulamasını development modunda çalıştırmak için:
 
+**Windows PowerShell için (execution policy sorunları varsa):**
+```bash
+npx concurrently "ng serve" "wait-on http://localhost:4200 && electron ."
+```
+
+**Normal:**
 ```bash
 npm run electron:dev
 ```
@@ -31,6 +37,12 @@ Bu komut:
 
 Windows için installer oluşturmak:
 
+**Windows PowerShell için:**
+```bash
+ng build --base-href ./ && npx electron-builder --win
+```
+
+**Normal:**
 ```bash
 npm run electron:build:win
 ```
@@ -70,8 +82,14 @@ frontend/Admin/
 
 ## Sorun Giderme
 
+**PowerShell Execution Policy Hatası:**
+```bash
+# npx kullanarak direkt komutu çalıştırın:
+npx concurrently "ng serve" "wait-on http://localhost:4200 && electron ."
+```
+
 **Electron penceresi açılmıyor:**
-- Önce `npm run start` ile Angular dev server'ın çalıştığından emin olun
+- Önce `npx ng serve` ile Angular dev server'ın çalıştığından emin olun
 
 **Build hatası alıyorsanız:**
 ```bash
