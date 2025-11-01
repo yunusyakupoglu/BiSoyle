@@ -34,6 +34,12 @@ builder.Services.AddCors(options =>
     });
 });
 
+// JSON Options to handle circular references
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+});
+
 var app = builder.Build();
 
 // Auto-migrate database
