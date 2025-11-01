@@ -39,12 +39,12 @@ ON CONFLICT ("TenantId", "UrunAdi") DO NOTHING;
 -- bisoyle_transaction veritabanı
 \c bisoyle_transaction;
 
--- Örnek işlemler
-INSERT INTO transactions ("IslemKodu", "IslemTipi", "ToplamTutar", "OdemeTipi", "OlusturmaTarihi") VALUES
-('TX-20251028001', 'SATIS', 1000.00, 'NAKİT', NOW() - INTERVAL '2 hours'),
-('TX-20251028002', 'SATIS', 1500.00, 'KREDİ KARTI', NOW() - INTERVAL '1 hour'),
-('TX-20251028003', 'SATIS', 750.00, 'NAKİT', NOW() - INTERVAL '30 minutes')
-ON CONFLICT DO NOTHING;
+-- Örnek işlemler (TenantId=1 ve UserId=1 varsayılan için)
+INSERT INTO transactions ("TenantId", "UserId", "IslemKodu", "IslemTipi", "ToplamTutar", "OdemeTipi", "OlusturmaTarihi") VALUES
+(1, 1, 'TX-20251028001', 'SATIS', 1000.00, 'NAKİT', NOW() - INTERVAL '2 hours'),
+(1, 1, 'TX-20251028002', 'SATIS', 1500.00, 'KREDİ KARTI', NOW() - INTERVAL '1 hour'),
+(1, 1, 'TX-20251028003', 'SATIS', 750.00, 'NAKİT', NOW() - INTERVAL '30 minutes')
+ON CONFLICT ("TenantId", "IslemKodu") DO NOTHING;
 
 SELECT 'Seed data loaded successfully!' as status;
 
