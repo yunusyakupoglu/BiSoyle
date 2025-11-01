@@ -68,6 +68,11 @@ export class TopbarComponent implements OnInit, OnDestroy {
   // Dynamic notifications
   voiceNotifications: any[] = []
   private maxNotifications = 5  // Max 5 bildirim göster
+  
+  // Product cache for validation
+  private productCache: any[] = []
+  private productCacheTime = 0
+  private readonly PRODUCT_CACHE_TTL = 60000 // 1 dakika
 
   constructor(@Inject(DOCUMENT) private document: any) {}
   @Output() settingsButtonClicked = new EventEmitter()
@@ -307,7 +312,9 @@ export class TopbarComponent implements OnInit, OnDestroy {
       if (this.isReceiptMode) {
         if (cmd.trim().length > 5) {
           console.log('Parsing product from text:', cmd)
-          this.parseProductFromVoice(cmd)
+          this.parseProductFromVoice(cmd).catch(err => {
+            console.error('Product parsing error:', err)
+          })
         }
       }
     }
@@ -359,7 +366,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
     return expanded
   }
 
-  parseProductFromVoice(text: string): void {
+  async parseProductFromVoice(text: string): Promise<void> {
     // Örnek: "3 adet patatesli poğaça" veya "yarım kilo cevizli baklava" veya "3 çikolatalı kruvasan"
     const patterns = [
       // ÖNCELIK 1: "yarım kilo" gibi özel durumlar
@@ -378,13 +385,51 @@ export class TopbarComponent implements OnInit, OnDestroy {
       console.log('Pattern match attempt:', pattern.regex, match)
       if (match) {
         const item = pattern.extract(match)
-        this.receiptItems.push(item)
-        console.log(`✓ Ürün eklendi: ${item.quantity} ${item.unit} - ${item.product}`)
-        return // Eşleşti, devam etme
+        
+        // Ürünün veritabanında olup olmadığını kontrol et
+        const isValidProduct = await this.validateProduct(item.product)
+        
+        if (isValidProduct) {
+          this.receiptItems.push(item)
+          console.log(`✓ Ürün eklendi: ${item.quantity} ${item.unit} - ${item.product}`)
+          this.addVoiceNotification(this.currentSpeaker || 'Sistem', `Ürün eklendi: ${item.product}`)
+          return // Eşleşti, devam etme
+        } else {
+          console.log(`✗ Ürün bulunamadı: ${item.product}`)
+          this.addVoiceNotification('Sistem', `Ürün bulunamadı: ${item.product}`)
+          return // Geçersiz ürün
+        }
       }
     }
     
     console.log('✗ Hiçbir pattern eşleşmedi:', text)
+  }
+  
+  private async validateProduct(productName: string): Promise<boolean> {
+    try {
+      // Cache kontrolü
+      const now = Date.now()
+      if (this.productCache.length === 0 || (now - this.productCacheTime) > this.PRODUCT_CACHE_TTL) {
+        console.log('Loading products from API...')
+        const response = await fetch('http://localhost:5000/api/v1/products', {
+          headers: { 'Authorization': `Bearer ${this.authService.getToken()}` }
+        })
+        this.productCache = await response.json()
+        this.productCacheTime = now
+      }
+      
+      // Ürünü ara
+      const found = this.productCache.find((p: any) => {
+        const dbName = (p.urunAdi || p.UrunAdi || '').toLowerCase()
+        const searchName = productName.toLowerCase()
+        return dbName.includes(searchName) || searchName.includes(dbName)
+      })
+      
+      return !!found
+    } catch (error) {
+      console.error('Product validation error:', error)
+      return false
+    }
   }
 
   async printReceipt(items: any[]): Promise<void> {
