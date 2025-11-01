@@ -190,8 +190,8 @@ app.MapPost("/api/receipt/print", async (HttpContext context, IHubContext<Receip
             {
                 container.Page(page =>
                 {
-                    page.Size(PageSizes.A4.Rotate()); // Rotate for better receipt format
-                    page.Margin(1f, Unit.Centimetre);
+                    page.Size(PageSizes.A4);
+                    page.Margin(2f, Unit.Centimetre);
                     
                     page.Content().Column(column =>
                     {
