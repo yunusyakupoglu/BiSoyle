@@ -248,21 +248,21 @@ export class TopbarComponent implements OnInit, OnDestroy {
     
     for (const cmd of commands) {
       // Fiş başlat komutları
-      if (cmd.includes('fiş başlat') || cmd.includes('fis baslat') || cmd.includes('fis bastir')) {
+      if (cmd.includes('başlat') || cmd.includes('baslat') || cmd.includes('fiş başlat') || cmd.includes('fis baslat')) {
         this.isReceiptMode = true
         this.receiptItems = []
         console.log('✓ Fiş modu başlatıldı')
         
         // Bildirim ekle
         if (this.currentSpeaker) {
-          this.addVoiceNotification(this.currentSpeaker, 'fiş başlattı')
+          this.addVoiceNotification(this.currentSpeaker, 'başlattı')
         }
         
         continue
       }
 
       // Fiş yazdır komutları
-      if (cmd.includes('fiş yazdır') || cmd.includes('fis yazdir') || cmd.includes('fiş yazdir') || cmd.includes('fis yazdır') || cmd.includes('yazdır') || cmd.includes('yazdir')) {
+      if (cmd.includes('yazdır') || cmd.includes('yazdir') || cmd.includes('fiş yazdır') || cmd.includes('fis yazdir')) {
         const now = Date.now()
         
         // Debounce: 2 saniye içinde tekrar yazdırma isteği varsa görmezden gel
@@ -293,10 +293,10 @@ export class TopbarComponent implements OnInit, OnDestroy {
           
           // Bildirim ekle
           if (this.currentSpeaker) {
-            this.addVoiceNotification(this.currentSpeaker, 'fiş yazdırdı')
+            this.addVoiceNotification(this.currentSpeaker, 'yazdırdı')
           }
         } else if (!this.isReceiptMode) {
-          console.log('✗ Önce "fiş başlat" komutu verilmeli')
+          console.log('✗ Önce "başlat" komutu verilmeli')
         } else {
           console.log(`✗ Fişte ürün bulunmuyor (${this.receiptItems.length} ürün)`)
         }
@@ -314,27 +314,28 @@ export class TopbarComponent implements OnInit, OnDestroy {
   }
 
   splitCommands(text: string): string[] {
-    // 1. Önce "fiş başlat", "fiş yazdır" gibi ana komutları bul
+    // 1. Önce "başlat", "yazdır" gibi ana komutları bul
     const commands: string[] = []
     let currentText = text
     
-    // "fiş başlat" komutunu bul ve çıkar
-    const fisBaslatIndex = currentText.search(/fiş başlat|fis baslat|fis bastir/i)
-    if (fisBaslatIndex >= 0) {
-      commands.push('fiş başlat')
-      currentText = currentText.substring(fisBaslatIndex + 10).trim()
+    // "başlat" komutunu bul ve çıkar
+    const baslatIndex = currentText.search(/başlat|baslat|fiş başlat|fis baslat/i)
+    if (baslatIndex >= 0) {
+      commands.push('başlat')
+      const offset = currentText.substring(baslatIndex).match(/başlat|baslat/)?.[0]?.length || 6
+      currentText = currentText.substring(baslatIndex + offset).trim()
     }
     
-    // "fiş yazdır" komutunu bul ve çıkar
-    const fisYazdirIndex = currentText.search(/fiş yazdır|fis yazdir|yazdır|yazdir/i)
-    if (fisYazdirIndex >= 0) {
-      const beforeYazdir = currentText.substring(0, fisYazdirIndex).trim()
+    // "yazdır" komutunu bul ve çıkar
+    const yazdirIndex = currentText.search(/yazdır|yazdir|fiş yazdır|fis yazdir/i)
+    if (yazdirIndex >= 0) {
+      const beforeYazdir = currentText.substring(0, yazdirIndex).trim()
       if (beforeYazdir) {
         commands.push(beforeYazdir)
       }
-      commands.push('fiş yazdır')
+      commands.push('yazdır')
     } else if (currentText.trim()) {
-      // Fiş yazdır komutu yoksa, geri kalanı ürün olarak ekle
+      // Yazdır komutu yoksa, geri kalanı ürün olarak ekle
       commands.push(currentText.trim())
     }
     
