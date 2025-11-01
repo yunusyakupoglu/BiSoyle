@@ -2,11 +2,8 @@ import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-
-interface OlcuBirimi {
-  id: number;
-  olcu_birimi_adi: string;
-}
+import { environment } from '../../../environments/environment';
+import { AuthService } from '@/app/services/auth.service';
 
 @Component({
   selector: 'app-olcu-birimleri',
@@ -16,57 +13,143 @@ interface OlcuBirimi {
   templateUrl: './olcu-birimleri.component.html'
 })
 export class OlcuBirimleriComponent implements OnInit {
-  olcuBirimleri: OlcuBirimi[] = [];
-  yukleniyor = false;
-  olcuAdi: string = '';
+  olcuBirimleri: any[] = [];
+  loading = false;
+  error: string | null = null;
+  
+  // Modal state
+  showModal = false;
+  editingUnit: any = null;
+  saving = false;
+  
+  // Form data
+  formData = {
+    birimAdi: '',
+    kisaltma: ''
+  };
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {}
 
   ngOnInit() {
-    this.olcuBirimleriniGetir();
+    this.loadOlcuBirimleri();
   }
 
-  olcuBirimleriniGetir() {
-    this.yukleniyor = true;
-    this.http.get<OlcuBirimi[]>('http://localhost:8000/olcu-birimleri').subscribe({
-      next: (data) => {
-        this.olcuBirimleri = data;
-        this.yukleniyor = false;
-      },
-      error: (err) => {
-        console.error('Ölçü birimleri yüklenemedi:', err);
-        this.yukleniyor = false;
-      }
-    });
+  loadOlcuBirimleri(): void {
+    this.loading = true;
+    this.error = null;
+
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`
+    };
+
+    this.http.get<any[]>(`${environment.apiUrl}/unit-of-measures`, { headers })
+      .subscribe({
+        next: (data) => {
+          this.olcuBirimleri = data;
+          this.loading = false;
+        },
+        error: (err) => {
+          console.error('Ölçü birimleri yüklenemedi:', err);
+          this.error = 'Ölçü birimleri yüklenirken bir hata oluştu.';
+          this.loading = false;
+        }
+      });
   }
 
-  olcuEkle() {
-    if (!this.olcuAdi) {
-      alert('Ölçü birimi adını girin');
+  openCreateModal(): void {
+    this.editingUnit = null;
+    this.formData = {
+      birimAdi: '',
+      kisaltma: ''
+    };
+    this.showModal = true;
+  }
+
+  openEditModal(unit: any): void {
+    this.editingUnit = unit;
+    this.formData = {
+      birimAdi: unit.birimAdi || '',
+      kisaltma: unit.kisaltma || ''
+    };
+    this.showModal = true;
+  }
+
+  closeModal(): void {
+    this.showModal = false;
+    this.editingUnit = null;
+  }
+
+  saveUnit(): void {
+    if (!this.formData.birimAdi || !this.formData.kisaltma) {
+      alert('Birim adı ve kısaltma zorunludur!');
       return;
     }
 
-    const yeniOlcu = {
-      olcu_birimi_adi: this.olcuAdi
+    this.saving = true;
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`,
+      'Content-Type': 'application/json'
     };
 
-    this.http.post<OlcuBirimi>('http://localhost:8000/olcu-birimleri', yeniOlcu).subscribe({
-      next: () => {
-        this.olcuBirimleriniGetir();
-        this.olcuAdi = '';
-      },
-      error: (err) => console.error('Ölçü birimi eklenemedi:', err)
-    });
+    const url = this.editingUnit 
+      ? `${environment.apiUrl}/unit-of-measures/${this.editingUnit.id}`
+      : `${environment.apiUrl}/unit-of-measures`;
+
+    const method = this.editingUnit ? 'put' : 'post';
+
+    this.http.request(method, url, { headers, body: this.formData })
+      .subscribe({
+        next: () => {
+          this.saving = false;
+          this.closeModal();
+          this.loadOlcuBirimleri();
+        },
+        error: (err) => {
+          console.error('Ölçü birimi kaydedilemedi:', err);
+          alert('Ölçü birimi kaydedilirken bir hata oluştu!');
+          this.saving = false;
+        }
+      });
   }
 
-  olcuSil(id: number) {
-    if (confirm('Bu ölçü birimini silmek istediğinizden emin misiniz?')) {
-      this.http.delete(`http://localhost:8000/olcu-birimleri/${id}`).subscribe({
-        next: () => this.olcuBirimleriniGetir(),
-        error: (err) => console.error('Ölçü birimi silinemedi:', err)
+  toggleActive(unit: any): void {
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`
+    };
+
+    this.http.put(`${environment.apiUrl}/unit-of-measures/${unit.id}/toggle-active`, {}, { headers })
+      .subscribe({
+        next: () => {
+          this.loadOlcuBirimleri();
+        },
+        error: (err) => {
+          console.error('Durum değiştirilemedi:', err);
+          alert('Durum değiştirilirken bir hata oluştu!');
+        }
       });
+  }
+
+  deleteUnit(unit: any): void {
+    if (!confirm(`${unit.birimAdi} ölçü birimini silmek istediğinize emin misiniz?`)) {
+      return;
     }
+
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`
+    };
+
+    this.http.delete(`${environment.apiUrl}/unit-of-measures/${unit.id}`, { headers })
+      .subscribe({
+        next: () => {
+          this.loadOlcuBirimleri();
+        },
+        error: (err) => {
+          console.error('Ölçü birimi silinemedi:', err);
+          alert(err.error?.message || 'Ölçü birimi silinirken bir hata oluştu!');
+        }
+      });
   }
 }
-
-

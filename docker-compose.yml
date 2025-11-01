@@ -1,6 +1,22 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5433:5432"  # Docker'ı 5433'e taşıdık
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: bisoyle
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -15,34 +31,83 @@ services:
       context: ./gateway
     ports:
       - "5000:5000"
+    environment:
+      - RECEIPT_SERVICE_URL=http://receipt-service:5001
+      - PRODUCT_SERVICE_URL=http://product-service:5002
+      - TRANSACTION_SERVICE_URL=http://transaction-service:5003
+      - USER_SERVICE_URL=http://user-service:5004
+      - TENANT_SERVICE_URL=http://tenant-service:5005
     depends_on:
       - receipt-service
       - product-service
       - transaction-service
+      - user-service
+      - tenant-service
 
   receipt-service:
     build:
       context: ./services/receipt-service
     ports:
       - "5001:5001"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=bisoyle_receipt;Username=postgres;Password=postgres123
     depends_on:
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
 
   product-service:
     build:
       context: ./services/product-service
     ports:
       - "5002:5002"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=bisoyle_product;Username=postgres;Password=postgres123
     depends_on:
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
 
   transaction-service:
     build:
       context: ./services/transaction-service
     ports:
       - "5003:5003"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=bisoyle_transaction;Username=postgres;Password=postgres123
     depends_on:
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+
+  user-service:
+    build:
+      context: ./services/user-service
+    ports:
+      - "5004:5004"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=bisoyle_user;Username=postgres;Password=postgres123
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+
+  tenant-service:
+    build:
+      context: ./services/tenant-service
+    ports:
+      - "5005:5005"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=bisoyle_tenant;Username=postgres;Password=postgres123
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
 
   voice-service:
     build:
@@ -51,6 +116,10 @@ services:
       - "8765:8765"
     volumes:
       - ./voice-models:/app/models
+
+volumes:
+  postgres_data:
+    driver: local
 
 networks:
   default:

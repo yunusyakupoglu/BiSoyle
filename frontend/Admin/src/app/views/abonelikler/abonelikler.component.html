@@ -1,0 +1,126 @@
+<div class="container-xxl">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h4 class="card-title mb-1">Abonelik Planları</h4>
+            <p class="text-muted mb-0">SuperAdmin - Abonelik planlarını görüntüle ve yönet</p>
+          </div>
+          <button class="btn btn-primary" (click)="openCreateModal()">
+            <i class="bx bx-plus"></i> Yeni Plan Ekle
+          </button>
+        </div>
+        <div class="card-body">
+          @if (loading) {
+            <div class="text-center py-5">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Yükleniyor...</span>
+              </div>
+            </div>
+          } @else if (error) {
+            <div class="alert alert-danger">{{ error }}</div>
+          } @else {
+            <div class="row">
+              @if (abonelikler.length === 0) {
+                <div class="col-12 text-center py-5">
+                  <i class="bx bx-package fs-1 text-muted"></i>
+                  <p class="text-muted mt-2 mb-3">Henüz abonelik planı bulunmuyor.</p>
+                  <button class="btn btn-primary" (click)="openCreateModal()">
+                    <i class="bx bx-plus"></i> İlk Planı Ekle
+                  </button>
+                </div>
+              } @else {
+                @for (plan of abonelikler; track plan.id) {
+                  <div class="col-md-4 mb-3">
+                    <div class="card border h-100">
+                      <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                          <h5 class="card-title mb-0">{{ plan.planAdi }}</h5>
+                          @if (plan.aktif) {
+                            <span class="badge bg-success"><i class="bx bx-check"></i> Aktif</span>
+                          } @else {
+                            <span class="badge bg-secondary"><i class="bx bx-x"></i> Pasif</span>
+                          }
+                        </div>
+                        <h3 class="text-primary mb-3">
+                          {{ plan.aylikUcret | number:'1.2-2' }} ₺ 
+                          <small class="text-muted fs-6">/ ay</small>
+                        </h3>
+                        <ul class="list-unstyled mb-4">
+                          <li class="mb-2">
+                            <i class="bx bx-check text-success fs-5 me-2"></i> 
+                            <strong>{{ plan.maxKullaniciSayisi }}</strong> Kullanıcı
+                          </li>
+                        </ul>
+                        <div class="d-flex gap-1">
+                          <button class="btn btn-sm btn-light flex-fill" (click)="openEditModal(plan)">
+                            <i class="bx bx-edit"></i> Düzenle
+                          </button>
+                          <button class="btn btn-sm flex-fill" 
+                                  [class.btn-warning]="plan.aktif"
+                                  [class.btn-success]="!plan.aktif"
+                                  (click)="toggleActive(plan)">
+                            <i class="bx" [class.bx-lock]="plan.aktif" [class.bx-lock-open]="!plan.aktif"></i>
+                            {{ plan.aktif ? 'Pasif' : 'Aktif' }}
+                          </button>
+                          <button class="btn btn-sm btn-danger" (click)="deletePlan(plan)">
+                            <i class="bx bx-trash"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create/Edit Modal -->
+<div class="modal fade" tabindex="-1" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ editingPlan ? 'Plan Düzenle' : 'Yeni Plan Ekle' }}</h5>
+        <button type="button" class="btn-close" (click)="closeModal()"></button>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="mb-3">
+            <label class="form-label">Plan Adı <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [(ngModel)]="formData.planAdi" name="planAdi" 
+                   placeholder="örn: Starter - 5 Çalışan" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Maksimum Kullanıcı Sayısı <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" [(ngModel)]="formData.maxKullaniciSayisi" 
+                   name="maxKullaniciSayisi" min="1" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Aylık Ücret (₺) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" [(ngModel)]="formData.aylikUcret" 
+                   name="aylikUcret" step="0.01" min="0" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">İptal</button>
+        <button type="button" class="btn btn-primary" (click)="savePlan()" [disabled]="saving">
+          @if (saving) {
+            <span class="spinner-border spinner-border-sm me-1"></span>
+          }
+          {{ editingPlan ? 'Güncelle' : 'Kaydet' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+@if (showModal) {
+  <div class="modal-backdrop fade show"></div>
+}
+

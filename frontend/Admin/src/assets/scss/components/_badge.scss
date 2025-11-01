@@ -24,3 +24,15 @@
         box-shadow: none;
     }
 }
+
+// Responsive Badge - Sidebar içinde
+.main-nav {
+    .badge {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100px;
+        display: inline-block;
+        vertical-align: middle;
+    }
+}

@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "BiSoyle.Receipt.Service": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:51421;http://localhost:51427"
+    }
+  }
+}

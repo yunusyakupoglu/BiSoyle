@@ -3,48 +3,58 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, throwError } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface LoginRequest {
-  kullanici_adi: string;
-  parola: string;
+  email: string;
+  password: string;
 }
 
 export interface RegisterRequest {
-  ad: string;
-  soyad: string;
-  kullanici_adi: string;
-  parola: string;
-  rol_id: number;
+  username: string;
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
 }
 
-export interface TokenResponse {
-  access_token: string;
-  token_type: string;
-}
-
-export interface UserResponse {
+export interface User {
   id: number;
-  ad: string;
-  soyad: string;
-  kullanici_adi: string;
-  rol_id: number;
+  tenantId?: number | null;
+  username: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  avatar?: string;
+  location?: string;
+  title?: string;
+  roles?: string[];
+}
+
+export interface LoginResponse {
+  user: User;
+  token: string;
+  refreshToken: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:8000';
-  private tokenKey = 'auth_token';
-  private userKey = 'user_data';
+  private apiUrl = environment.apiUrl;
+  private tokenKey = '_BISOYLE_AUTH_TOKEN_';
+  private userKey = '_BISOYLE_USER_DATA_';
+  private refreshTokenKey = '_BISOYLE_REFRESH_TOKEN_';
 
   constructor(private http: HttpClient, private router: Router) {}
 
-  login(credentials: LoginRequest): Observable<TokenResponse> {
-    return this.http.post<TokenResponse>(`${this.apiUrl}/auth/login`, credentials).pipe(
+  login(credentials: LoginRequest): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login`, credentials).pipe(
       tap(response => {
-        if (response.access_token) {
-          localStorage.setItem(this.tokenKey, response.access_token);
+        if (response && response.token) {
+          localStorage.setItem(this.tokenKey, response.token);
+          localStorage.setItem(this.userKey, JSON.stringify(response.user));
+          localStorage.setItem(this.refreshTokenKey, response.refreshToken);
         }
       }),
       catchError(error => {
@@ -54,8 +64,8 @@ export class AuthService {
     );
   }
 
-  register(userData: RegisterRequest): Observable<UserResponse> {
-    return this.http.post<UserResponse>(`${this.apiUrl}/auth/register`, userData).pipe(
+  register(userData: RegisterRequest): Observable<any> {
+    return this.http.post(`${this.apiUrl}/auth/register`, userData).pipe(
       catchError(error => {
         console.error('Register error:', error);
         return throwError(() => error);
@@ -67,7 +77,7 @@ export class AuthService {
     return localStorage.getItem(this.tokenKey);
   }
 
-  getUser(): UserResponse | null {
+  getUser(): User | null {
     const userStr = localStorage.getItem(this.userKey);
     if (userStr) {
       return JSON.parse(userStr);
@@ -75,7 +85,7 @@ export class AuthService {
     return null;
   }
 
-  setUser(user: UserResponse): void {
+  setUser(user: User): void {
     localStorage.setItem(this.userKey, JSON.stringify(user));
   }
 
@@ -86,11 +96,12 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.userKey);
+    localStorage.removeItem(this.refreshTokenKey);
     this.router.navigate(['/auth/sign-in']);
   }
 
-  getMe(): Observable<UserResponse> {
-    return this.http.get<UserResponse>(`${this.apiUrl}/auth/me`).pipe(
+  getMe(): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/auth/me`).pipe(
       tap(user => this.setUser(user)),
       catchError(error => {
         console.error('Get user error:', error);
@@ -98,6 +109,10 @@ export class AuthService {
         return throwError(() => error);
       })
     );
+  }
+
+  getUsers(): Observable<User[]> {
+    return this.http.get<User[]>(`${this.apiUrl}/users`);
   }
 }
 

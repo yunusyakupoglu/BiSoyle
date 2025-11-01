@@ -1,7 +1,4 @@
 import { Route } from '@angular/router'
-import { WidgetsComponent } from './apps/widgets/widgets.component'
-import { InvoiceDetailsComponent } from './invoices/invoice-details/invoice-details.component'
-import { InvoicesComponent } from './invoices/invoices/invoices.component'
 import { SpeakerIDComponent } from './speakerid/speakerid.component'
 import { KategorilerComponent } from './kategoriler/kategoriler.component'
 import { UrunlerComponent } from './urunler/urunler.component'
@@ -10,125 +7,74 @@ import { IslemlerComponent } from './islemler/islemler.component'
 import { KullanicilarComponent } from './kullanicilar/kullanicilar.component'
 import { CihazlarComponent } from './cihazlar/cihazlar.component'
 import { AuthGuard } from '../guards/auth.guard'
+import { adminGuard, userGuard, superAdminGuard } from '../guards/role.guard'
 
 export const VIEW_ROUTES: Route[] = [
-  // Protected routes - AuthGuard will redirect to /auth/login if not authenticated
+  // ========================
+  // SUPERADMIN ONLY ROUTES
+  // ========================
+  {
+    path: 'firmalar',
+    loadChildren: () =>
+      import('./firmalar/firmalar.route').then((mod) => mod.FIRMALAR_ROUTES),
+    canActivate: [superAdminGuard],
+    data: { title: 'Firmalar', roles: ['SuperAdmin'] },
+  },
+  {
+    path: 'abonelikler',
+    loadChildren: () =>
+      import('./abonelikler/abonelikler.route').then((mod) => mod.ABONELIKLER_ROUTES),
+    canActivate: [superAdminGuard],
+    data: { title: 'Abonelik Planları', roles: ['SuperAdmin'] },
+  },
+
+  // ========================
+  // ADMIN & USER COMMON
+  // ========================
   {
     path: 'speakerid',
     component: SpeakerIDComponent,
-    canActivate: [AuthGuard],
-    data: { title: 'Speaker ID' },
-  },
-  {
-    path: 'kategoriler',
-    component: KategorilerComponent,
-    canActivate: [AuthGuard],
-    data: { title: 'Kategoriler' },
-  },
-  {
-    path: 'urunler',
-    component: UrunlerComponent,
-    canActivate: [AuthGuard],
-    data: { title: 'Ürünler' },
-  },
-  {
-    path: 'olcu-birimleri',
-    component: OlcuBirimleriComponent,
-    canActivate: [AuthGuard],
-    data: { title: 'Ölçü Birimleri' },
+    canActivate: [userGuard],
+    data: { title: 'Speaker ID', roles: ['Admin', 'User'] },
   },
   {
     path: 'islemler',
     component: IslemlerComponent,
-    canActivate: [AuthGuard],
-    data: { title: 'İşlemler' },
+    canActivate: [userGuard],
+    data: { title: 'İşlemler', roles: ['Admin', 'User'] },
+  },
+
+  // ========================
+  // ADMIN ONLY ROUTES
+  // ========================
+  {
+    path: 'kategoriler',
+    component: KategorilerComponent,
+    canActivate: [adminGuard],
+    data: { title: 'Kategoriler', roles: ['Admin'] },
+  },
+  {
+    path: 'urunler',
+    component: UrunlerComponent,
+    canActivate: [adminGuard],
+    data: { title: 'Ürünler', roles: ['Admin'] },
+  },
+  {
+    path: 'olcu-birimleri',
+    component: OlcuBirimleriComponent,
+    canActivate: [adminGuard],
+    data: { title: 'Ölçü Birimleri', roles: ['Admin'] },
   },
   {
     path: 'kullanicilar',
     component: KullanicilarComponent,
-    canActivate: [AuthGuard],
-    data: { title: 'Kullanıcılar' },
+    canActivate: [adminGuard],
+    data: { title: 'Kullanıcılar', roles: ['Admin'] },
   },
   {
     path: 'cihazlar',
     component: CihazlarComponent,
-    canActivate: [AuthGuard],
-    data: { title: 'Cihazlar' },
-  },
-  {
-    path: 'pages',
-    loadChildren: () =>
-      import('./pages/pages.route').then((mod) => mod.PAGES_ROUTES),
-  },
-  {
-    path: 'dashboard',
-    loadChildren: () =>
-      import('./dashboards/dashboards.route').then(
-        (mod) => mod.DASHBOARD_ROUTES
-      ),
-  },
-  {
-    path: 'ecommerce',
-    loadChildren: () =>
-      import('./ecommerce/ecommerce.route').then((mod) => mod.ECOMMERCE_ROUTES),
-  },
-  {
-    path: 'apps',
-    loadChildren: () =>
-      import('./apps/apps.route').then((mod) => mod.APPS_ROUTES),
-  },
-  {
-    path: 'calendar',
-    loadChildren: () =>
-      import('./calendar/calendar.route').then((mod) => mod.CALENDAR_ROUTES),
-  },
-  {
-    path: 'invoices',
-    component: InvoicesComponent,
-    data: { title: 'Invoices' },
-  },
-  {
-    path: 'invoice/:id',
-    component: InvoiceDetailsComponent,
-    data: { title: 'Invoice Details' },
-  },
-
-  {
-    path: 'widgets',
-    component: WidgetsComponent,
-    data: { title: 'Widgets' },
-  },
-  {
-    path: 'ui',
-    loadChildren: () => import('./ui/ui.route').then((mod) => mod.UI_ROUTES),
-  },
-  {
-    path: 'advanced',
-    loadChildren: () =>
-      import('./advanced-ui/advanced.route').then((mod) => mod.ADVANCED_ROUTES),
-  },
-  {
-    path: 'charts',
-    loadChildren: () =>
-      import('./charts/charts.route').then((mod) => mod.CHART_ROUTE),
-  },
-  {
-    path: 'forms',
-    loadChildren: () =>
-      import('./forms/forms.route').then((mod) => mod.FOMRS_ROUTE),
-  },
-  {
-    path: 'tables',
-    loadChildren: () =>
-      import('./tables/table.route').then((mod) => mod.TABLES_ROUTE),
-  },
-  {
-    path: 'icons',
-    loadChildren: () =>
-      import('./icons/icons.route').then((mod) => mod.ICONS_ROUTES),
-  },
-  {
-    path: 'maps',
-    loadChildren: () => import('./map/map.route').then((mod) => mod.MAPS_ROUTE),
+    canActivate: [adminGuard],
+    data: { title: 'Cihazlar', roles: ['Admin'] },
   },
 ]

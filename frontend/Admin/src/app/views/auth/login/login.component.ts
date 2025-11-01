@@ -39,8 +39,8 @@ export class LoginComponent {
     this.hataMesaji = '';
 
     this.authService.login({
-      kullanici_adi: this.kullaniciAdi,
-      parola: this.parola
+      email: this.kullaniciAdi,
+      password: this.parola
     }).subscribe({
       next: (response) => {
         this.yukleniyor = false;

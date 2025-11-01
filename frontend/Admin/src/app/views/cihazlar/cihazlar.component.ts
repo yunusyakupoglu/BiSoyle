@@ -1,108 +1,189 @@
-import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { AuthService } from 'src/app/services/auth.service';
-import { NgbModal, NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import { AuthService } from '@/app/services/auth.service';
 
-interface Cihaz {
+interface Device {
   id: number;
-  cihaz_adi: string;
-  cihaz_tipi: 'yazici' | 'mikrofon';
+  tenantId: number;
+  cihazAdi: string;
+  cihazTipi: 'yazici' | 'mikrofon';
   marka: string;
   model: string;
-  baglant_tipi: 'usb' | 'bluetooth' | 'wifi';
+  baglantiTipi: 'usb' | 'bluetooth' | 'wifi';
   durum: 'aktif' | 'pasif';
-  created_at: string;
+  olusturmaTarihi: string;
 }
 
 @Component({
   selector: 'app-cihazlar',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './cihazlar.component.html',
-  styleUrls: ['./cihazlar.component.scss'],
-  providers: [NgbModalConfig, NgbModal]
+  styleUrls: ['./cihazlar.component.scss']
 })
 export class CihazlarComponent implements OnInit {
-  cihazlar: Cihaz[] = [];
-  filteredCihazlar: Cihaz[] = [];
-  searchTerm: string = '';
-  tipFilter: string = 'tumu';
+  devices: Device[] = [];
+  loading = false;
+  error: string | null = null;
   
-  // Modal için
-  currentCihaz: any = null;
-  isEditMode: boolean = false;
+  // Modal state
+  showModal = false;
+  editingDevice: Device | null = null;
+  saving = false;
+  
+  // Discovery state
+  testingDeviceId: number | null = null; // For device testing
+  scanning = false;
+  
+  // Form data
+  formData = {
+    tenantId: null as number | null,
+    cihazAdi: '',
+    cihazTipi: 'yazici' as 'yazici' | 'mikrofon',
+    marka: '',
+    model: '',
+    baglantiTipi: 'usb' as 'usb' | 'bluetooth' | 'wifi',
+    durum: 'aktif' as 'aktif' | 'pasif'
+  };
 
   constructor(
     private http: HttpClient,
-    private authService: AuthService,
-    private modalService: NgbModal,
-    config: NgbModalConfig
-  ) {
-    config.backdrop = 'static';
-    config.keyboard = false;
-  }
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void {
-    this.cihazlariYukle();
+    this.loadDevices();
   }
 
-  get apiUrl() {
-    return 'http://localhost:8000';
-  }
+  loadDevices(): void {
+    this.loading = true;
+    this.error = null;
 
-  get headers() {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
-  }
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`
+    };
 
-  cihazlariYukle(): void {
-    this.http.get<Cihaz[]>(`${this.apiUrl}/cihazlar`, { headers: this.headers })
+    this.http.get<Device[]>(`${environment.apiUrl}/devices`, { headers })
       .subscribe({
         next: (data) => {
-          this.cihazlar = data;
-          this.filteredCihazlar = data;
+          this.devices = data;
+          this.loading = false;
         },
         error: (err) => {
           console.error('Cihazlar yüklenemedi:', err);
-          this.cihazlar = [];
-          this.filteredCihazlar = [];
+          this.error = 'Cihazlar yüklenirken bir hata oluştu.';
+          this.loading = false;
         }
       });
   }
 
-  search(): void {
-    let filtered = this.cihazlar;
-
-    // Tip filtresi
-    if (this.tipFilter !== 'tumu') {
-      filtered = filtered.filter(c => c.cihaz_tipi === this.tipFilter);
-    }
-
-    // Arama
-    if (this.searchTerm) {
-      const term = this.searchTerm.toLowerCase();
-      filtered = filtered.filter(c => 
-        c.cihaz_adi.toLowerCase().includes(term) ||
-        c.marka.toLowerCase().includes(term) ||
-        c.model.toLowerCase().includes(term) ||
-        c.baglant_tipi.toLowerCase().includes(term)
-      );
-    }
-
-    this.filteredCihazlar = filtered;
+  openCreateModal(): void {
+    const currentUser = this.authService.getUser();
+    this.editingDevice = null;
+    this.formData = {
+      tenantId: currentUser?.tenantId || null,
+      cihazAdi: '',
+      cihazTipi: 'yazici',
+      marka: '',
+      model: '',
+      baglantiTipi: 'usb',
+      durum: 'aktif'
+    };
+    this.showModal = true;
   }
 
-  getDurumBadgeClass(durum: string): string {
-    return durum === 'aktif' ? 'success' : 'secondary';
+  openEditModal(device: Device): void {
+    this.editingDevice = device;
+    this.formData = {
+      tenantId: device.tenantId,
+      cihazAdi: device.cihazAdi,
+      cihazTipi: device.cihazTipi,
+      marka: device.marka,
+      model: device.model,
+      baglantiTipi: device.baglantiTipi,
+      durum: device.durum
+    };
+    this.showModal = true;
   }
 
-  getDurumLabel(durum: string): string {
-    return durum === 'aktif' ? 'Aktif' : 'Pasif';
+  closeModal(): void {
+    this.showModal = false;
+    this.editingDevice = null;
+  }
+
+  saveDevice(): void {
+    if (!this.formData.cihazAdi || !this.formData.marka || !this.formData.model) {
+      alert('Lütfen tüm zorunlu alanları doldurun!');
+      return;
+    }
+
+    this.saving = true;
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`,
+      'Content-Type': 'application/json'
+    };
+
+    const url = this.editingDevice 
+      ? `${environment.apiUrl}/devices/${this.editingDevice.id}`
+      : `${environment.apiUrl}/devices`;
+
+    const method = this.editingDevice ? 'put' : 'post';
+
+    this.http.request(method, url, { headers, body: this.formData })
+      .subscribe({
+        next: () => {
+          this.saving = false;
+          this.closeModal();
+          this.loadDevices();
+          alert(`✅ Cihaz ${this.editingDevice ? 'güncellendi' : 'eklendi'}!`);
+        },
+        error: (err) => {
+          console.error('Cihaz kaydedilemedi:', err);
+          alert(err.error?.message || 'Cihaz kaydedilirken bir hata oluştu!');
+          this.saving = false;
+        }
+      });
+  }
+
+  toggleStatus(device: Device): void {
+    if (!confirm(`${device.cihazAdi} cihazını ${device.durum === 'aktif' ? 'pasif' : 'aktif'} etmek istediğinize emin misiniz?`)) {
+      return;
+    }
+
+    const headers = { 'Authorization': `Bearer ${this.authService.getToken()}` };
+    this.http.put(`${environment.apiUrl}/devices/${device.id}/toggle-status`, {}, { headers })
+      .subscribe({
+        next: () => {
+          this.loadDevices();
+          alert(`✅ Cihaz durumu değiştirildi!`);
+        },
+        error: (err) => {
+          console.error('Durum değiştirilemedi:', err);
+          alert('Durum değiştirilirken bir hata oluştu!');
+        }
+      });
+  }
+
+  deleteDevice(device: Device): void {
+    if (!confirm(`${device.cihazAdi} cihazını silmek istediğinize emin misiniz? (Pasif edilecek)`)) {
+      return;
+    }
+
+    const headers = { 'Authorization': `Bearer ${this.authService.getToken()}` };
+    this.http.delete(`${environment.apiUrl}/devices/${device.id}`, { headers })
+      .subscribe({
+        next: () => {
+          this.loadDevices();
+          alert(`✅ Cihaz pasif edildi!`);
+        },
+        error: (err) => {
+          console.error('Cihaz silinemedi:', err);
+          alert(err.error?.message || 'Cihaz silinirken bir hata oluştu!');
+        }
+      });
   }
 
   getTipLabel(tip: string): string {
@@ -118,140 +199,87 @@ export class CihazlarComponent implements OnInit {
     return labels[tip] || tip;
   }
 
-  yeniCihaz(content: any): void {
-    this.currentCihaz = {
-      cihaz_adi: '',
-      cihaz_tipi: 'yazici',
-      marka: '',
-      model: '',
-      baglant_tipi: 'usb',
-      durum: 'aktif'
+  getDurumBadgeClass(durum: string): string {
+    return durum === 'aktif' ? 'success' : 'secondary';
+  }
+
+  // Otomatik Cihaz Tarama
+  discoverDevices(): void {
+    const currentUser = this.authService.getUser();
+    if (!currentUser?.tenantId) {
+      alert('Tenant bilgisi bulunamadı!');
+      return;
+    }
+
+    if (!confirm('Bilgisayara bağlı tüm yazıcı ve mikrofonlar taranacak. Devam etmek istiyor musunuz?')) {
+      return;
+    }
+
+    this.scanning = true;
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`,
+      'Content-Type': 'application/json'
     };
-    this.isEditMode = false;
-    this.modalService.open(content, { size: 'lg' });
-  }
 
-  duzenle(cihaz: Cihaz, content: any): void {
-    this.currentCihaz = { ...cihaz };
-    this.isEditMode = true;
-    this.modalService.open(content, { size: 'lg' });
-  }
-
-  kaydet(content: any): void {
-    if (!this.currentCihaz.cihaz_adi || !this.currentCihaz.marka || !this.currentCihaz.model) {
-      alert('Cihaz adı, marka ve model zorunludur');
-      return;
-    }
-
-    if (this.isEditMode) {
-      const url = `${this.apiUrl}/cihazlar/${this.currentCihaz.id}`;
-      this.http.put<Cihaz>(url, this.currentCihaz, { headers: this.headers })
-        .subscribe({
-          next: (data) => {
-            alert('Cihaz kaydedildi');
-            this.modalService.dismissAll();
-            this.cihazlariYukle();
-          },
-          error: (err) => {
-            const errorMsg = err.error?.detail || err.message || 'Bilinmeyen hata';
-            alert('Hata: ' + errorMsg);
-            console.error('Cihaz kaydedilemedi:', err);
-          }
-        });
-    } else {
-      const url = `${this.apiUrl}/cihazlar`;
-      this.http.post<Cihaz>(url, this.currentCihaz, { headers: this.headers })
-        .subscribe({
-          next: (data) => {
-            alert('Cihaz kaydedildi');
-            this.modalService.dismissAll();
-            this.cihazlariYukle();
-          },
-          error: (err) => {
-            const errorMsg = err.error?.detail || err.message || 'Bilinmeyen hata';
-            alert('Hata: ' + errorMsg);
-            console.error('Cihaz kaydedilemedi:', err);
-          }
-        });
-    }
-  }
-
-  sil(id: number): void {
-    if (!confirm('Bu cihazı silmek istediğinizden emin misiniz?')) {
-      return;
-    }
-
-    this.http.delete(`${this.apiUrl}/cihazlar/${id}`, { headers: this.headers })
+    this.http.post(`${environment.apiUrl.replace('/api/v1', '')}/api/devices/discover?tenantId=${currentUser.tenantId}`, {}, { headers })
       .subscribe({
-        next: () => {
-          alert('Cihaz silindi');
-          this.cihazlariYukle();
+        next: (response: any) => {
+          this.scanning = false;
+          alert(`✅ Cihaz Tarama Tamamlandı!\n\nBulunan: ${response.discovered}\nEklenen: ${response.added}\n\n${response.message}`);
+          this.loadDevices(); // Refresh list
         },
         error: (err) => {
-          const errorMsg = err.error?.detail || err.message || 'Bilinmeyen hata';
-          alert('Hata: ' + errorMsg);
+          console.error('Cihaz tarama hatası:', err);
+          this.scanning = false;
+          alert(err.error?.message || 'Cihaz taraması sırasında bir hata oluştu!');
         }
       });
   }
 
-
-  tespitEt(): void {
-    if (!confirm('Anlık cihaz tespiti yapılsın mı?')) {
+  // Bluetooth Cihaz Test
+  testBluetoothDevice(device: Device): void {
+    if (device.baglantiTipi !== 'bluetooth') {
+      alert('Bu özellik sadece Bluetooth cihazları için kullanılabilir.');
       return;
     }
 
-    // Gerçek cihaz tespiti için API çağrısı
-    this.http.get<any[]>(`${this.apiUrl}/cihazlar/detect`, { headers: this.headers })
+    if (!confirm(`${device.cihazAdi} Bluetooth cihazını test etmek istediğinize emin misiniz?`)) {
+      return;
+    }
+
+    this.testingDeviceId = device.id;
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`,
+      'Content-Type': 'application/json'
+    };
+
+    this.http.post(`${environment.apiUrl.replace('/api/v1', '')}/api/devices/${device.id}/test`, {}, { headers })
       .subscribe({
-        next: (detectedDevices) => {
-          if (detectedDevices.length === 0) {
-            alert('Tespit edilen cihaz bulunamadı. Manuel ekleme yapınız.');
-            return;
+        next: (response: any) => {
+          this.testingDeviceId = null;
+          const result = response.testResult;
+          
+          let message = `🔍 Cihaz Test Sonucu: ${device.cihazAdi}\n\n`;
+          message += `${result.message}\n\n`;
+          
+          if (result.isDocker) {
+            message += `⚠️ NOT: Docker container içinde Bluetooth test yapılamaz.\n`;
+            message += `💡 Çözüm: Product Service'i Windows'ta native çalıştırın:\n`;
+            message += `   cd services/product-service\n`;
+            message += `   dotnet run\n`;
           }
-
-          let added = 0;
-          detectedDevices.forEach(device => {
-            // Mevcut cihazlar listesinde var mı kontrol et
-            const exists = this.cihazlar.some(c => c.cihaz_adi === device.name);
-            
-            if (!exists) {
-              // Cihaz adından marka ve model çıkarmaya çalış
-              const nameParts = device.name.split(' ');
-              const marka = nameParts.length > 0 ? nameParts[0] : 'Bilinmiyor';
-              const model = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Bilinmiyor';
-
-              const newCihaz = {
-                cihaz_adi: device.name,
-                cihaz_tipi: device.device_type || 'mikrofon',
-                marka: marka,
-                model: model,
-                baglant_tipi: device.connection_type || 'usb',
-                durum: 'aktif'
-              };
-
-              this.http.post<Cihaz>(`${this.apiUrl}/cihazlar`, newCihaz, { headers: this.headers })
-                .subscribe({
-                  next: () => added++,
-                  error: (err) => console.error('Cihaz eklenemedi:', err)
-                });
-            }
-          });
-
-          setTimeout(() => {
-            if (added > 0) {
-              alert(`${added} yeni cihaz tespit edildi ve eklendi!`);
-              this.cihazlariYukle();
-            } else {
-              alert('Tüm cihazlar zaten eklenmiş veya yeni cihaz bulunamadı.');
-              this.cihazlariYukle();
-            }
-          }, 1500);
+          
+          if (result.success) {
+            alert(message);
+          } else {
+            alert(message);
+          }
         },
         error: (err) => {
-          console.error('Cihaz tespiti hatası:', err);
-          alert('Cihaz tespiti yapılamadı. Manuel ekleme yapınız.');
+          console.error('Cihaz test hatası:', err);
+          this.testingDeviceId = null;
+          alert(err.error?.message || 'Cihaz testi sırasında bir hata oluştu!');
         }
       });
   }
 }
-

@@ -21,7 +21,7 @@ import { Store } from '@ngrx/store'
 import { SimplebarAngularModule } from 'simplebar-angular'
 import { getLayoutColor } from '../../store/layout/layout-selector'
 import { logout } from '@/app/store/authentication/authentication.actions'
-import { Router, RouterLink } from '@angular/router'
+import { Router } from '@angular/router'
 import { activityStreamData, appsData, notificationsData } from './data'
 import { AuthService } from '@/app/services/auth.service'
 
@@ -32,7 +32,6 @@ import { AuthService } from '@/app/services/auth.service'
     NgbDropdownModule,
     SimplebarAngularModule,
     NgbOffcanvasModule,
-    RouterLink,
     CommonModule,
     NgbTooltipModule,
   ],
@@ -63,6 +62,10 @@ export class TopbarComponent implements OnInit, OnDestroy {
   isReceiptMode = false  // "fiş başlat" denince true olur
   receiptItems: any[] = []  // Fiş itemları
   lastPrintTime = 0  // Debounce için son yazdırma zamanı
+  
+  // Dynamic notifications
+  voiceNotifications: any[] = []
+  private maxNotifications = 5  // Max 5 bildirim göster
 
   constructor(@Inject(DOCUMENT) private document: any) {}
   @Output() settingsButtonClicked = new EventEmitter()
@@ -87,7 +90,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
   startListening(): void {
     // WebSocket ile konuşmacı tanıma - Voice Service (Python)
     const wsProto = location.protocol === 'https:' ? 'wss' : 'ws'
-    this.ws = new WebSocket(`${wsProto}://localhost:8765`)
+    this.ws = new WebSocket(`${wsProto}://localhost:8766`)
 
     // Web Speech API ile konuşma tanıma
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
@@ -146,14 +149,26 @@ export class TopbarComponent implements OnInit, OnDestroy {
         this.processor = this.audioContext.createScriptProcessor(2048, 1, 1)
 
         // Sample rate gönder
-        this.ws?.send(JSON.stringify({ type: 'config', sr: this.audioContext.sampleRate }))
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.ws.send(JSON.stringify({ type: 'config', sr: this.audioContext.sampleRate }))
+        }
 
         // Ses işleme
         this.processor.onaudioprocess = (e) => {
-          const input = e.inputBuffer.getChannelData(0)
-          const buf = new Float32Array(input.length)
-          buf.set(input)
-          this.ws?.send(buf.buffer)
+          // WebSocket durumunu kontrol et
+          if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            return; // WebSocket kapalıysa veri gönderme
+          }
+          
+          try {
+            const input = e.inputBuffer.getChannelData(0)
+            const buf = new Float32Array(input.length)
+            buf.set(input)
+            this.ws.send(buf.buffer)
+          } catch (err) {
+            console.error('Audio data send error:', err)
+            this.stopListening()
+          }
         }
 
         source.connect(this.processor)
@@ -235,6 +250,12 @@ export class TopbarComponent implements OnInit, OnDestroy {
         this.isReceiptMode = true
         this.receiptItems = []
         console.log('✓ Fiş modu başlatıldı')
+        
+        // Bildirim ekle
+        if (this.currentSpeaker) {
+          this.addVoiceNotification(this.currentSpeaker, 'fiş başlattı')
+        }
+        
         continue
       }
 
@@ -267,6 +288,11 @@ export class TopbarComponent implements OnInit, OnDestroy {
           this.isReceiptMode = false
           this.receiptItems = []
           console.log('✓ Fiş kaydedildi, yeni komutlar hazır')
+          
+          // Bildirim ekle
+          if (this.currentSpeaker) {
+            this.addVoiceNotification(this.currentSpeaker, 'fiş yazdırdı')
+          }
         } else if (!this.isReceiptMode) {
           console.log('✗ Önce "fiş başlat" komutu verilmeli')
         } else {
@@ -374,16 +400,23 @@ export class TopbarComponent implements OnInit, OnDestroy {
           item.product.toLowerCase().includes(u.urun_adi.toLowerCase())
         )
         return {
-          quantity: item.quantity,
-          unit: item.unit,
-          product: item.product,
-          price: matchedUrun ? matchedUrun.birim_fiyat : 0,
-          urun_id: matchedUrun ? matchedUrun.id : 0
+          Quantity: item.quantity,      // Backend büyük harf bekliyor
+          Unit: item.unit,               // Backend büyük harf bekliyor
+          Product: item.product,         // Backend büyük harf bekliyor
+          Price: matchedUrun ? matchedUrun.birim_fiyat : 0,  // Backend büyük harf bekliyor
+          UrunId: matchedUrun ? matchedUrun.id : 0
         }
       })
 
       console.log('Enriched items:', enrichedItems)
-      const receiptData = { items: enrichedItems }
+      
+      // Get user info for TenantId and UserId
+      const user = this.authService.getUser()
+      const receiptData = { 
+        Items: enrichedItems,
+        TenantId: user?.tenantId || 1,  // Default to 1 if not set
+        UserId: user?.id || 1
+      }
 
       // Backend API'ye istek at - Gateway üzerinden
       const printResponse = await fetch('http://localhost:5000/api/v1/receipt/print', {
@@ -404,13 +437,9 @@ export class TopbarComponent implements OnInit, OnDestroy {
       const data = await printResponse.json()
       
       if (data.ok) {
-        if (data.type === 'pdf') {
-          const islemKodu = data.islem_kodu || 'Bilinmiyor'
-          console.log(`✓ Fiş PDF: ${islemKodu}`)
-          window.open(`http://localhost:5000/${data.path}`, '_blank')
-        } else {
-          console.log(`✓ ${data.message}`)
-        }
+        const islemKodu = data.islem_kodu || 'Bilinmiyor'
+        console.log(`✓ Fiş oluşturuldu: ${islemKodu} - Toplam: ${data.toplam_tutar} TL`)
+        // TODO: PDF olarak indir veya yazıcıya gönder
       }
     } catch (err) {
       console.error('✗ Yazdırma hatası:', err)
@@ -480,6 +509,24 @@ export class TopbarComponent implements OnInit, OnDestroy {
       return 'iconamoon:check-circle-1-duotone'
     } else {
       return 'iconamoon:certificate-badge-duotone'
+    }
+  }
+  
+  addVoiceNotification(speaker: string, action: string) {
+    const notification = {
+      from: speaker,
+      content: `${action}`,
+      icon: '',
+      timestamp: new Date(),
+      type: 'voice'
+    }
+    
+    // Add to beginning
+    this.voiceNotifications.unshift(notification)
+    
+    // Keep only max notifications
+    if (this.voiceNotifications.length > this.maxNotifications) {
+      this.voiceNotifications = this.voiceNotifications.slice(0, this.maxNotifications)
     }
   }
 }

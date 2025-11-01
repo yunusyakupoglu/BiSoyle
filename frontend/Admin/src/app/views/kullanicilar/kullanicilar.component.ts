@@ -1,203 +1,262 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { AuthService } from 'src/app/services/auth.service';
-import { NgbModal, NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
-
-interface Kullanici {
-  id: number;
-  ad: string;
-  soyad: string;
-  kullanici_adi: string;
-  rol_id: number;
-}
-
-interface Rol {
-  id: number;
-  rol_adi: string;
-}
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import { AuthService } from '@/app/services/auth.service';
 
 @Component({
   selector: 'app-kullanicilar',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './kullanicilar.component.html',
-  styleUrls: ['./kullanicilar.component.scss'],
-  providers: [NgbModalConfig, NgbModal]
+  styleUrls: ['./kullanicilar.component.scss']
 })
 export class KullanicilarComponent implements OnInit {
-  kullanicilar: Kullanici[] = [];
-  roller: Rol[] = [];
-  filteredKullanicilar: Kullanici[] = [];
-  searchTerm: string = '';
+  kullanicilar: any[] = [];
+  roller: any[] = [];
+  loading = false;
+  error: string | null = null;
   
-  // Modal için
-  currentKullanici: any = null;
-  isEditMode: boolean = false;
+  // Modal state
+  showModal = false;
+  editingUser: any = null;
+  saving = false;
   
+  // Form data
+  formData = {
+    username: '',
+    email: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+    title: '',
+    location: '',
+    tenantId: null as number | null,
+    roleIds: [] as number[]
+  };
+
   constructor(
     private http: HttpClient,
-    private authService: AuthService,
-    private modalService: NgbModal,
-    config: NgbModalConfig
-  ) {
-    config.backdrop = 'static';
-    config.keyboard = false;
-  }
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void {
-    this.yukleKullanicilar();
-    this.yukleRoller();
+    this.loadKullanicilar();
+    this.loadRoller();
   }
 
-  get apiUrl() {
-    return 'http://localhost:8000';
-  }
+  loadKullanicilar(): void {
+    this.loading = true;
+    this.error = null;
 
-  get headers() {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
-  }
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`
+    };
 
-  yukleKullanicilar(): void {
-    this.http.get<Kullanici[]>(`${this.apiUrl}/kullanicilar`, { headers: this.headers })
+    this.http.get<any[]>(`${environment.apiUrl}/users`, { headers })
       .subscribe({
         next: (data) => {
           this.kullanicilar = data;
-          this.filteredKullanicilar = data;
+          this.loading = false;
         },
-        error: (err) => console.error('Kullanıcılar yüklenemedi:', err)
+        error: (err) => {
+          console.error('Kullanıcılar yüklenemedi:', err);
+          this.error = 'Kullanıcılar yüklenirken bir hata oluştu.';
+          this.loading = false;
+        }
       });
   }
 
-  yukleRoller(): void {
-    this.http.get<Rol[]>(`${this.apiUrl}/roller`, { headers: this.headers })
+  loadRoller(): void {
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`
+    };
+
+    this.http.get<any[]>(`${environment.apiUrl}/roles`, { headers })
       .subscribe({
         next: (data) => {
           this.roller = data;
         },
-        error: (err) => console.error('Roller yüklenemedi:', err)
+        error: (err) => {
+          console.error('Roller yüklenemedi:', err);
+        }
       });
   }
 
-  search(): void {
-    if (!this.searchTerm) {
-      this.filteredKullanicilar = this.kullanicilar;
-      return;
-    }
-    
-    const term = this.searchTerm.toLowerCase();
-    this.filteredKullanicilar = this.kullanicilar.filter(k => 
-      k.kullanici_adi.toLowerCase().includes(term) ||
-      k.ad.toLowerCase().includes(term) ||
-      k.soyad.toLowerCase().includes(term)
-    );
-  }
-
-  getRolAdi(rolId: number): string {
-    const rol = this.roller.find(r => r.id === rolId);
-    return rol ? rol.rol_adi : 'Bilinmiyor';
-  }
-
-  edit(kullanici: Kullanici, content: any): void {
-    this.currentKullanici = { ...kullanici };
-    this.isEditMode = true;
-    this.modalService.open(content, { size: 'lg' });
-  }
-
-  newUser(content: any): void {
-    this.currentKullanici = {
-      ad: '',
-      soyad: '',
-      kullanici_adi: '',
-      parola: '',
-      rol_id: 2
+  openCreateModal(): void {
+    const currentUser = this.authService.getUser();
+    this.editingUser = null;
+    this.formData = {
+      username: '',
+      email: '',
+      password: '',
+      firstName: '',
+      lastName: '',
+      title: '',
+      location: '',
+      tenantId: currentUser?.tenantId || null,
+      roleIds: []
     };
-    this.isEditMode = false;
-    this.modalService.open(content, { size: 'lg' });
+    this.showModal = true;
   }
 
-  save(content: any): void {
-    if (!this.currentKullanici.kullanici_adi || !this.currentKullanici.ad) {
-      alert('Kullanıcı adı ve ad zorunludur');
+  openEditModal(user: any): void {
+    this.editingUser = user;
+    
+    // Get role IDs from role names
+    const roleIds = user.roles?.map((roleName: string) => {
+      const role = this.roller.find(r => r.roleAdi === roleName);
+      return role?.id;
+    }).filter((id: number | undefined) => id !== undefined) || [];
+    
+    this.formData = {
+      username: user.username || '',
+      email: user.email || '',
+      password: '',
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      title: user.title || '',
+      location: user.location || '',
+      tenantId: user.tenantId,
+      roleIds: roleIds
+    };
+    this.showModal = true;
+  }
+
+  closeModal(): void {
+    this.showModal = false;
+    this.editingUser = null;
+  }
+
+  isRoleSelected(roleId: number): boolean {
+    return this.formData.roleIds.includes(roleId);
+  }
+
+  toggleRole(roleId: number): void {
+    const index = this.formData.roleIds.indexOf(roleId);
+    if (index > -1) {
+      this.formData.roleIds.splice(index, 1);
+    } else {
+      this.formData.roleIds.push(roleId);
+    }
+  }
+
+  saveUser(): void {
+    if (!this.formData.username || !this.formData.email || !this.formData.firstName) {
+      alert('Kullanıcı adı, e-posta ve ad zorunludur!');
       return;
     }
 
-    if (!this.isEditMode && !this.currentKullanici.parola) {
-      alert('Şifre zorunludur');
+    if (!this.editingUser && !this.formData.password) {
+      alert('Şifre zorunludur!');
       return;
     }
 
-    if (this.isEditMode) {
-      // Update existing user
-      const url = `${this.apiUrl}/kullanicilar/${this.currentKullanici.id}`;
-      const body = {
-        ad: this.currentKullanici.ad,
-        soyad: this.currentKullanici.soyad,
-        kullanici_adi: this.currentKullanici.kullanici_adi,
-        parola: this.currentKullanici.parola || '',
-        rol_id: this.currentKullanici.rol_id
+    if (this.formData.roleIds.length === 0) {
+      alert('En az bir rol seçmelisiniz!');
+      return;
+    }
+
+    this.saving = true;
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`,
+      'Content-Type': 'application/json'
+    };
+
+    if (this.editingUser) {
+      // Update user
+      const updateData = {
+        username: this.formData.username,
+        email: this.formData.email,
+        firstName: this.formData.firstName,
+        lastName: this.formData.lastName,
+        title: this.formData.title,
+        location: this.formData.location
       };
 
-      this.http.put<Kullanici>(url, body, { headers: this.headers })
+      this.http.put(`${environment.apiUrl}/users/${this.editingUser.id}`, updateData, { headers })
         .subscribe({
-          next: (data) => {
-            alert('Kullanıcı güncellendi');
-            this.modalService.dismissAll();
-            this.yukleKullanicilar();
+          next: () => {
+            // Update roles
+            this.http.put(`${environment.apiUrl}/users/${this.editingUser.id}/roles`, 
+              { roleIds: this.formData.roleIds }, { headers })
+              .subscribe({
+                next: () => {
+                  this.saving = false;
+                  this.closeModal();
+                  this.loadKullanicilar();
+                },
+                error: (err) => {
+                  console.error('Roller güncellenemedi:', err);
+                  this.saving = false;
+                  alert('Roller güncellenirken bir hata oluştu!');
+                }
+              });
           },
           error: (err) => {
-            const errorMsg = err.error?.detail || err.message || 'Bilinmeyen hata';
-            alert('Hata: ' + errorMsg);
-            console.error('Update error:', err);
+            console.error('Kullanıcı güncellenemedi:', err);
+            alert('Kullanıcı güncellenirken bir hata oluştu!');
+            this.saving = false;
           }
         });
     } else {
-      // Create new user
-      const url = `${this.apiUrl}/auth/register`;
-      const body = {
-        ad: this.currentKullanici.ad,
-        soyad: this.currentKullanici.soyad,
-        kullanici_adi: this.currentKullanici.kullanici_adi,
-        parola: this.currentKullanici.parola,
-        rol_id: this.currentKullanici.rol_id
-      };
-
-      this.http.post<Kullanici>(url, body, { headers: this.headers })
+      // Create user
+      this.http.post(`${environment.apiUrl}/users`, this.formData, { headers })
         .subscribe({
-          next: (data) => {
-            alert('Kullanıcı oluşturuldu');
-            this.modalService.dismissAll();
-            this.yukleKullanicilar();
+          next: () => {
+            this.saving = false;
+            this.closeModal();
+            this.loadKullanicilar();
           },
           error: (err) => {
-            const errorMsg = err.error?.detail || err.message || 'Bilinmeyen hata';
-            alert('Hata: ' + errorMsg);
-            console.error('Create error:', err);
+            console.error('Kullanıcı oluşturulamadı:', err);
+            alert(err.error?.message || 'Kullanıcı oluşturulurken bir hata oluştu!');
+            this.saving = false;
           }
         });
     }
   }
 
-  delete(id: number): void {
-    if (!confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
+  toggleActive(user: any): void {
+    if (!confirm(`${user.firstName} ${user.lastName} kullanıcısını ${user.aktif ? 'pasif' : 'aktif'} etmek istediğinize emin misiniz?`)) {
       return;
     }
 
-    this.http.delete(`${this.apiUrl}/kullanicilar/${id}`, { headers: this.headers })
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`
+    };
+
+    this.http.put(`${environment.apiUrl}/users/${user.id}/toggle-active`, {}, { headers })
       .subscribe({
         next: () => {
-          alert('Kullanıcı silindi');
-          this.yukleKullanicilar();
+          this.loadKullanicilar();
         },
         error: (err) => {
-          alert('Hata: ' + (err.error?.detail || 'Bilinmeyen hata'));
+          console.error('Durum değiştirilemedi:', err);
+          alert('Durum değiştirilirken bir hata oluştu!');
+        }
+      });
+  }
+
+  deleteUser(user: any): void {
+    if (!confirm(`${user.firstName} ${user.lastName} kullanıcısını silmek istediğinize emin misiniz?`)) {
+      return;
+    }
+
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`
+    };
+
+    this.http.delete(`${environment.apiUrl}/users/${user.id}`, { headers })
+      .subscribe({
+        next: () => {
+          this.loadKullanicilar();
+        },
+        error: (err) => {
+          console.error('Kullanıcı silinemedi:', err);
+          alert('Kullanıcı silinirken bir hata oluştu!');
         }
       });
   }
 }
-

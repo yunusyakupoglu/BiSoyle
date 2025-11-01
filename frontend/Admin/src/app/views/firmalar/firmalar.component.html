@@ -1,0 +1,226 @@
+<div class="container-xxl">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h4 class="card-title mb-1">Firmalar (Tenant Yönetimi)</h4>
+            <p class="text-muted mb-0">SuperAdmin - Tüm firmaları görüntüle ve yönet</p>
+          </div>
+          <button class="btn btn-primary" (click)="openCreateModal()">
+            <i class="bx bx-plus"></i> Yeni Firma Ekle
+          </button>
+        </div>
+        <div class="card-body">
+          @if (loading) {
+            <div class="text-center py-5">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Yükleniyor...</span>
+              </div>
+            </div>
+          } @else if (error) {
+            <div class="alert alert-danger">{{ error }}</div>
+          } @else {
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>ID</th>
+                    <th>Firma Bilgileri</th>
+                    <th>İletişim</th>
+                    <th>Abonelik</th>
+                    <th>Durum</th>
+                    <th>Tarih</th>
+                    <th class="text-end">İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (firmalar.length === 0) {
+                    <tr>
+                      <td colspan="7" class="text-center py-5">
+                        <i class="bx bx-buildings fs-1 text-muted"></i>
+                        <p class="text-muted mt-2 mb-3">Henüz firma bulunmuyor.</p>
+                        <button class="btn btn-primary" (click)="openCreateModal()">
+                          <i class="bx bx-plus"></i> İlk Firmayı Ekle
+                        </button>
+                      </td>
+                    </tr>
+                  } @else {
+                    @for (firma of firmalar; track firma.id) {
+                      <tr>
+                        <td><strong>#{{ firma.id }}</strong></td>
+                        <td>
+                          <strong class="d-block">{{ firma.firmaAdi }}</strong>
+                          @if (firma.vergiNo) {
+                            <small class="text-muted">VKN: {{ firma.vergiNo }}</small>
+                          }
+                        </td>
+                        <td>
+                          <div>
+                            <i class="bx bx-envelope me-1"></i>
+                            <small>{{ firma.email }}</small>
+                          </div>
+                          @if (firma.telefon) {
+                            <div>
+                              <i class="bx bx-phone me-1"></i>
+                              <small>{{ firma.telefon }}</small>
+                            </div>
+                          }
+                        </td>
+                        <td>
+                          @if (firma.subscription) {
+                            <span class="badge bg-info">{{ firma.subscription.plan }}</span>
+                          } @else {
+                            <span class="badge bg-secondary">Abonelik Yok</span>
+                          }
+                        </td>
+                        <td>
+                          @if (firma.aktif) {
+                            <span class="badge bg-success"><i class="bx bx-check"></i> Aktif</span>
+                          } @else {
+                            <span class="badge bg-danger"><i class="bx bx-x"></i> Pasif</span>
+                          }
+                        </td>
+                        <td>
+                          <small class="text-muted">{{ firma.olusturmaTarihi | date:'dd.MM.yyyy' }}</small>
+                        </td>
+                        <td class="text-end">
+                          <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-info" (click)="openCreateAdminModal(firma)" title="Admin Kullanıcı Ekle">
+                              <i class="bx bx-user-plus"></i>
+                            </button>
+                            <button class="btn btn-sm btn-light" (click)="openEditModal(firma)" title="Düzenle">
+                              <i class="bx bx-edit"></i>
+                            </button>
+                            <button class="btn btn-sm" 
+                                    [class.btn-warning]="firma.aktif"
+                                    [class.btn-success]="!firma.aktif"
+                                    (click)="toggleActive(firma)" 
+                                    [title]="firma.aktif ? 'Pasif Et' : 'Aktif Et'">
+                              <i class="bx" [class.bx-lock]="firma.aktif" [class.bx-lock-open]="!firma.aktif"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" (click)="deleteFirma(firma)" title="Sil">
+                              <i class="bx bx-trash"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create/Edit Modal -->
+<div class="modal fade" tabindex="-1" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ editingFirma ? 'Firma Düzenle' : 'Yeni Firma Ekle' }}</h5>
+        <button type="button" class="btn-close" (click)="closeModal()"></button>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="mb-3">
+            <label class="form-label">Firma Adı <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [(ngModel)]="formData.firmaAdi" name="firmaAdi" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">E-posta <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" [(ngModel)]="formData.email" name="email" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Telefon</label>
+            <input type="text" class="form-control" [(ngModel)]="formData.telefon" name="telefon">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Vergi No</label>
+            <input type="text" class="form-control" [(ngModel)]="formData.vergiNo" name="vergiNo">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Adres</label>
+            <textarea class="form-control" rows="2" [(ngModel)]="formData.adres" name="adres"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">İptal</button>
+        <button type="button" class="btn btn-primary" (click)="saveFirma()" [disabled]="saving">
+          @if (saving) {
+            <span class="spinner-border spinner-border-sm me-1"></span>
+          }
+          {{ editingFirma ? 'Güncelle' : 'Kaydet' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+@if (showModal) {
+  <div class="modal-backdrop fade show"></div>
+}
+
+<!-- Admin User Creation Modal -->
+<div class="modal fade" tabindex="-1" [class.show]="showAdminModal" [style.display]="showAdminModal ? 'block' : 'none'">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ selectedFirma?.firmaAdi }} için Admin Kullanıcı Oluştur</h5>
+        <button type="button" class="btn-close" (click)="closeAdminModal()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info">
+          <i class="bx bx-info-circle"></i>
+          Bu kullanıcı <strong>{{ selectedFirma?.firmaAdi }}</strong> firmasının yöneticisi olacak ve tüm firma verilerine erişebilecek.
+        </div>
+        <form>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Ad <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" [(ngModel)]="adminFormData.firstName" name="firstName" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Soyad <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" [(ngModel)]="adminFormData.lastName" name="lastName" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Kullanıcı Adı <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [(ngModel)]="adminFormData.username" name="username" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">E-posta <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" [(ngModel)]="adminFormData.email" name="email" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Şifre <span class="text-danger">*</span></label>
+            <input type="password" class="form-control" [(ngModel)]="adminFormData.password" name="password" required>
+            <small class="text-muted">Bu şifre ile firma yöneticisi giriş yapabilecek</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Ünvan</label>
+            <input type="text" class="form-control" [(ngModel)]="adminFormData.title" name="title" placeholder="örn: Firma Yöneticisi">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeAdminModal()">İptal</button>
+        <button type="button" class="btn btn-primary" (click)="createAdminUser()" [disabled]="savingAdmin">
+          @if (savingAdmin) {
+            <span class="spinner-border spinner-border-sm me-1"></span>
+          }
+          Admin Kullanıcı Oluştur
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+@if (showAdminModal) {
+  <div class="modal-backdrop fade show"></div>
+}
+

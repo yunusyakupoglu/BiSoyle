@@ -14,6 +14,7 @@ import { changesidebarsize } from '@/app/store/layout/layout-action'
 import { Store } from '@ngrx/store'
 import { getSidebarsize } from '@/app/store/layout/layout-selector'
 import { basePath } from '@/app/common/constants'
+import { AuthService } from '@/app/services/auth.service'
 
 @Component({
   selector: 'app-sidebar',
@@ -36,6 +37,7 @@ export class SidebarComponent {
 
   store = inject(Store)
   router = inject(Router)
+  authService = inject(AuthService)
   trimmedURL = this.router.url?.replaceAll(
     basePath !== '' ? basePath + '/' : '',
     '/'
@@ -61,7 +63,19 @@ export class SidebarComponent {
   }
 
   initMenu(): void {
-    this.menuItems = MENU
+    const user = this.authService.getUser()
+    const userRoles = user?.roles || []
+    
+    // Rollere göre menüyü filtrele
+    this.menuItems = MENU.filter((item: MenuItem) => {
+      // Eğer item'da roles tanımlanmamışsa, herkese göster
+      if (!item.roles || item.roles.length === 0) {
+        return true
+      }
+      
+      // Kullanıcının rollerinden herhangi biri item'ın rollerinde varsa göster
+      return item.roles.some((role: string) => userRoles.includes(role))
+    })
   }
 
   ngAfterViewInit() {

@@ -38,18 +38,85 @@
     </div>
   </div>
 
+  <!-- Enrolled Speakers List -->
+  <div class="row" *ngIf="enrolledSpeakers.length > 0">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h4 class="card-title">📋 Kayıtlı Konuşmacılar</h4>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4 col-lg-3" *ngFor="let speaker of enrolledSpeakers">
+              <div class="card border">
+                <div class="card-body">
+                  <div class="d-flex align-items-center">
+                    <iconify-icon icon="iconamoon:profile-duotone" class="fs-24 text-primary me-2"></iconify-icon>
+                    <div>
+                      <h6 class="mb-0">{{ speaker }}</h6>
+                      <small class="text-muted">Kayıtlı kişi</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Enroll Section -->
   <div class="row">
     <div class="col-lg-6">
       <div class="card">
         <div class="card-header">
           <h4 class="card-title">📝 Kişi Kaydetme</h4>
+          <div *ngIf="!canEnrollSpeakers" class="badge bg-danger ms-2">Admin Gerekli</div>
         </div>
         <div class="card-body">
-          <form>
+          <!-- Yetki Uyarısı -->
+          <div *ngIf="!canEnrollSpeakers" class="alert alert-warning">
+            <iconify-icon icon="iconamoon:warning-duotone" class="me-1"></iconify-icon>
+            <strong>Yetki Uyarısı:</strong> Ses kaydı eklemek için Admin rolü gerekli. Bu özellik sadece firma yöneticileri tarafından kullanılabilir.
+          </div>
+          
+          <form [class.pe-none]="!canEnrollSpeakers">
             <div class="mb-3">
-              <label class="form-label" for="enroll-name">Kişi Adı</label>
-              <input type="text" class="form-control" id="enroll-name" [(ngModel)]="enrollName" name="enrollName" placeholder="Örn: Ali Yılmaz">
+              <label class="form-label">Kişi Seçin veya İsim Girin</label>
+              <div class="position-relative">
+                <input type="text" class="form-control" [(ngModel)]="userSearchText" name="userSearch" 
+                       placeholder="En az 3 karakter yazın..." 
+                       (input)="searchUsers(userSearchText)"
+                       (blur)="showUserDropdown = false">
+                
+                <!-- Dropdown Results -->
+                <div *ngIf="showUserDropdown && filteredUsers.length > 0" 
+                     class="list-group position-absolute w-100" 
+                     style="z-index: 1000; max-height: 250px; overflow-y: auto;">
+                  <button type="button" class="list-group-item list-group-item-action" 
+                          *ngFor="let user of filteredUsers"
+                          (mousedown)="selectUser(user)">
+                    <div class="d-flex w-100 justify-content-between">
+                      <div>
+                        <h6 class="mb-0">{{user.firstName}} {{user.lastName}}</h6>
+                        <small class="text-muted">{{user.email}}</small>
+                      </div>
+                      <span class="badge bg-secondary ms-2">
+                        {{user.roles?.[0] || 'Kullanıcı'}}
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Selected User Display -->
+              <div *ngIf="enrollName" class="mt-2">
+                <div class="alert alert-info py-2">
+                  <iconify-icon icon="iconamoon:profile-duotone" class="me-1"></iconify-icon>
+                  <strong>Seçilen:</strong> {{enrollName}}
+                </div>
+              </div>
             </div>
             
             <div class="mb-3">

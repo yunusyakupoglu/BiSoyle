@@ -10,6 +10,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BiSoyle.Product.Service", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BiSoyle.Transaction.Service", "services\transaction-service\BiSoyle.Transaction.Service.csproj", "{D4E5F6A7-B8C9-4D5E-0F1A-2B3C4D5E6F7A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BiSoyle.User.Service", "services\user-service\BiSoyle.User.Service.csproj", "{E5F6A7B8-C9D0-4E5F-1A2B-3C4D5E6F7A8B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BiSoyle.Tenant.Service", "services\tenant-service\BiSoyle.Tenant.Service.csproj", "{F6A7B8C9-D0E1-4F5A-2B3C-4D5E6F7A8B9C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,6 +36,14 @@ Global
 		{D4E5F6A7-B8C9-4D5E-0F1A-2B3C4D5E6F7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4E5F6A7-B8C9-4D5E-0F1A-2B3C4D5E6F7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4E5F6A7-B8C9-4D5E-0F1A-2B3C4D5E6F7A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E5F6A7B8-C9D0-4E5F-1A2B-3C4D5E6F7A8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E5F6A7B8-C9D0-4E5F-1A2B-3C4D5E6F7A8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E5F6A7B8-C9D0-4E5F-1A2B-3C4D5E6F7A8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E5F6A7B8-C9D0-4E5F-1A2B-3C4D5E6F7A8B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F6A7B8C9-D0E1-4F5A-2B3C-4D5E6F7A8B9C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6A7B8C9-D0E1-4F5A-2B3C-4D5E6F7A8B9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6A7B8C9-D0E1-4F5A-2B3C-4D5E6F7A8B9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6A7B8C9-D0E1-4F5A-2B3C-4D5E6F7A8B9C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

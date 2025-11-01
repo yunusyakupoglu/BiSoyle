@@ -2,12 +2,8 @@ import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-
-interface Kategori {
-  id: number;
-  kategori_adi: string;
-  kullanici_id: number;
-}
+import { environment } from '../../../environments/environment';
+import { AuthService } from '@/app/services/auth.service';
 
 @Component({
   selector: 'app-kategoriler',
@@ -17,102 +13,151 @@ interface Kategori {
   templateUrl: './kategoriler.component.html'
 })
 export class KategorilerComponent implements OnInit {
-  private apiUrl = 'http://localhost:8000';
+  kategoriler: any[] = [];
+  loading = false;
+  error: string | null = null;
   
-  kategoriler: Kategori[] = [];
-  yeniKategori: string = '';
-  duzenleKategori: Kategori | null = null;
-  yukleniyorData: boolean = false;
-  mesaj: string = '';
-  mesajTip: 'success' | 'danger' | 'warning' | 'info' = 'info';
+  // Modal state
+  showModal = false;
+  editingCategory: any = null;
+  saving = false;
+  
+  // Form data
+  formData = {
+    kategoriAdi: '',
+    aciklama: '',
+    tenantId: null as number | null
+  };
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {}
 
   ngOnInit() {
     this.loadKategoriler();
   }
 
   loadKategoriler() {
-    this.yukleniyorData = true;
-    this.http.get<Kategori[]>(`${this.apiUrl}/kategoriler`).subscribe({
-      next: (data) => {
-        this.kategoriler = data;
-        this.yukleniyorData = false;
-      },
-      error: (err) => {
-        this.mesaj = 'Kategoriler yüklenemedi: ' + err.message;
-        this.mesajTip = 'danger';
-        this.yukleniyorData = false;
-      }
-    });
+    this.loading = true;
+    this.error = null;
+
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`
+    };
+
+    this.http.get<any[]>(`${environment.apiUrl}/categories`, { headers })
+      .subscribe({
+        next: (data) => {
+          this.kategoriler = data;
+          this.loading = false;
+        },
+        error: (err) => {
+          console.error('Kategoriler yüklenemedi:', err);
+          this.error = 'Kategoriler yüklenirken bir hata oluştu.';
+          this.loading = false;
+        }
+      });
   }
 
-  ekle() {
-    if (!this.yeniKategori.trim()) {
-      this.mesaj = '⚠️ Kategori adı gerekli';
-      this.mesajTip = 'warning';
+  openCreateModal(): void {
+    const currentUser = this.authService.getUser();
+    this.editingCategory = null;
+    this.formData = {
+      kategoriAdi: '',
+      aciklama: '',
+      tenantId: currentUser?.tenantId || null
+    };
+    this.showModal = true;
+  }
+
+  openEditModal(category: any): void {
+    this.editingCategory = category;
+    this.formData = {
+      kategoriAdi: category.kategoriAdi || '',
+      aciklama: category.aciklama || '',
+      tenantId: category.tenantId
+    };
+    this.showModal = true;
+  }
+
+  closeModal(): void {
+    this.showModal = false;
+    this.editingCategory = null;
+  }
+
+  saveCategory(): void {
+    if (!this.formData.kategoriAdi) {
+      alert('Kategori adı zorunludur!');
       return;
     }
 
-    this.http.post<Kategori>(`${this.apiUrl}/kategoriler`, {
-      kategori_adi: this.yeniKategori
-    }).subscribe({
-      next: (data) => {
-        this.mesaj = '✅ Kategori eklendi';
-        this.mesajTip = 'success';
-        this.yeniKategori = '';
-        this.loadKategoriler();
-      },
-      error: (err) => {
-        this.mesaj = '❌ Hata: ' + err.message;
-        this.mesajTip = 'danger';
-      }
-    });
+    this.saving = true;
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`,
+      'Content-Type': 'application/json'
+    };
+
+    const url = this.editingCategory 
+      ? `${environment.apiUrl}/categories/${this.editingCategory.id}`
+      : `${environment.apiUrl}/categories`;
+
+    const method = this.editingCategory ? 'put' : 'post';
+
+    this.http.request(method, url, { headers, body: this.formData })
+      .subscribe({
+        next: () => {
+          this.saving = false;
+          this.closeModal();
+          this.loadKategoriler();
+        },
+        error: (err) => {
+          console.error('Kategori kaydedilemedi:', err);
+          alert('Kategori kaydedilirken bir hata oluştu!');
+          this.saving = false;
+        }
+      });
   }
 
-  duzenle(kategori: Kategori) {
-    this.duzenleKategori = { ...kategori };
+  toggleActive(category: any): void {
+    if (!confirm(`${category.kategoriAdi} kategorisini ${category.aktif ? 'pasif' : 'aktif'} etmek istediğinize emin misiniz?`)) {
+      return;
+    }
+
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`
+    };
+
+    this.http.put(`${environment.apiUrl}/categories/${category.id}/toggle-active`, {}, { headers })
+      .subscribe({
+        next: () => {
+          this.loadKategoriler();
+        },
+        error: (err) => {
+          console.error('Durum değiştirilemedi:', err);
+          alert('Durum değiştirilirken bir hata oluştu!');
+        }
+      });
   }
 
-  guncelle() {
-    if (!this.duzenleKategori) return;
+  deleteCategory(category: any): void {
+    if (!confirm(`${category.kategoriAdi} kategorisini silmek istediğinize emin misiniz?`)) {
+      return;
+    }
 
-    this.http.put<Kategori>(`${this.apiUrl}/kategoriler/${this.duzenleKategori.id}`, {
-      kategori_adi: this.duzenleKategori.kategori_adi
-    }).subscribe({
-      next: (data) => {
-        this.mesaj = '✅ Kategori güncellendi';
-        this.mesajTip = 'success';
-        this.duzenleKategori = null;
-        this.loadKategoriler();
-      },
-      error: (err) => {
-        this.mesaj = '❌ Hata: ' + err.message;
-        this.mesajTip = 'danger';
-      }
-    });
-  }
+    const headers = {
+      'Authorization': `Bearer ${this.authService.getToken()}`
+    };
 
-  sil(id: number) {
-    if (!confirm('Bu kategoriyi silmek istediğinize emin misiniz?')) return;
-
-    this.http.delete(`${this.apiUrl}/kategoriler/${id}`).subscribe({
-      next: () => {
-        this.mesaj = '✅ Kategori silindi';
-        this.mesajTip = 'success';
-        this.loadKategoriler();
-      },
-      error: (err) => {
-        this.mesaj = '❌ Hata: ' + err.message;
-        this.mesajTip = 'danger';
-      }
-    });
-  }
-
-  iptal() {
-    this.duzenleKategori = null;
+    this.http.delete(`${environment.apiUrl}/categories/${category.id}`, { headers })
+      .subscribe({
+        next: () => {
+          this.loadKategoriler();
+        },
+        error: (err) => {
+          console.error('Kategori silinemedi:', err);
+          alert(err.error?.message || 'Kategori silinirken bir hata oluştu!');
+        }
+      });
   }
 }
-
-
-

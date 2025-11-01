@@ -50,11 +50,11 @@ export class RegisterComponent {
     this.basariMesaji = '';
 
     this.authService.register({
-      ad: this.ad,
-      soyad: this.soyad,
-      kullanici_adi: this.kullaniciAdi,
-      parola: this.parola,
-      rol_id: 2  // Normal kullanıcı
+      username: this.kullaniciAdi,
+      email: this.kullaniciAdi + '@bisoyle.com',
+      password: this.parola,
+      firstName: this.ad,
+      lastName: this.soyad
     }).subscribe({
       next: (response) => {
         this.yukleniyor = false;

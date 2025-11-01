@@ -1,96 +1,124 @@
 <div class="container-xxl">
-  
   <div class="row">
     <div class="col-12">
-      <div class="page-title-box">
-        <h4 class="page-title">Kategoriler</h4>
-      </div>
-    </div>
-  </div>
-
-  <div *ngIf="mesaj" class="alert alert-{{mesajTip}}" role="alert">
-    {{ mesaj }}
-  </div>
-
-  <div class="row">
-    <!-- Yeni Kategori Ekle -->
-    <div class="col-lg-4">
       <div class="card">
-        <div class="card-header">
-          <h4 class="card-title">Yeni Kategori Ekle</h4>
-        </div>
-        <div class="card-body">
-          <div class="mb-3">
-            <label class="form-label">Kategori Adı</label>
-            <input type="text" class="form-control" [(ngModel)]="yeniKategori" placeholder="Örn: Elektronik">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h4 class="card-title mb-1">Kategoriler</h4>
+            <p class="text-muted mb-0">Ürün kategorilerini yönet</p>
           </div>
-          <button type="button" class="btn btn-success" (click)="ekle()">
-            <iconify-icon icon="iconamoon:plus-circle-duotone" class="me-1"></iconify-icon>
-            Ekle
+          <button class="btn btn-primary" (click)="openCreateModal()">
+            <i class="bx bx-plus"></i> Yeni Kategori
           </button>
         </div>
-      </div>
-    </div>
-
-    <!-- Kategoriler Listesi -->
-    <div class="col-lg-8">
-      <div class="card">
-        <div class="card-header">
-          <h4 class="card-title">Kategori Listesi</h4>
-        </div>
         <div class="card-body">
-          <div *ngIf="yukleniyorData" class="text-center">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Yükleniyor...</span>
+          @if (loading) {
+            <div class="text-center py-5">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Yükleniyor...</span>
+              </div>
             </div>
-          </div>
-
-          <div *ngIf="!yukleniyorData && kategoriler.length === 0" class="alert alert-info">
-            Henüz kategori eklenmemiş.
-          </div>
-
-          <div *ngIf="!yukleniyorData && kategoriler.length > 0" class="table-responsive">
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Kategori Adı</th>
-                  <th class="text-end">İşlemler</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let kat of kategoriler">
-                  <td>{{ kat.id }}</td>
-                  <td>
-                    <span *ngIf="duzenleKategori?.id !== kat.id">{{ kat.kategori_adi }}</span>
-                    <input *ngIf="duzenleKategori?.id === kat.id && duzenleKategori" 
-                           type="text" 
-                           class="form-control form-control-sm" 
-                           [(ngModel)]="duzenleKategori!.kategori_adi"
-                           name="kategoriAdi">
-                  </td>
-                  <td class="text-end">
-                    <div *ngIf="duzenleKategori?.id !== kat.id" class="btn-group btn-group-sm">
-                      <button type="button" class="btn btn-primary" (click)="duzenle(kat)">
-                        <iconify-icon icon="iconamoon:edit-duotone"></iconify-icon>
-                      </button>
-                      <button type="button" class="btn btn-danger" (click)="sil(kat.id)">
-                        <iconify-icon icon="iconamoon:trash-duotone"></iconify-icon>
-                      </button>
-                    </div>
-                    <div *ngIf="duzenleKategori?.id === kat.id" class="btn-group btn-group-sm">
-                      <button type="button" class="btn btn-success" (click)="guncelle()">Kaydet</button>
-                      <button type="button" class="btn btn-secondary" (click)="iptal()">İptal</button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          } @else if (error) {
+            <div class="alert alert-danger">{{ error }}</div>
+          } @else {
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>ID</th>
+                    <th>Kategori Adı</th>
+                    <th>Açıklama</th>
+                    <th>Durum</th>
+                    <th class="text-end">İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (kategoriler.length === 0) {
+                    <tr>
+                      <td colspan="5" class="text-center py-5">
+                        <i class="bx bx-folder fs-1 text-muted"></i>
+                        <p class="text-muted mt-2 mb-3">Henüz kategori bulunmuyor.</p>
+                        <button class="btn btn-primary" (click)="openCreateModal()">
+                          <i class="bx bx-plus"></i> İlk Kategoriyi Ekle
+                        </button>
+                      </td>
+                    </tr>
+                  } @else {
+                    @for (category of kategoriler; track category.id) {
+                      <tr>
+                        <td><strong>#{{ category.id }}</strong></td>
+                        <td><strong>{{ category.kategoriAdi }}</strong></td>
+                        <td><small class="text-muted">{{ category.aciklama || '-' }}</small></td>
+                        <td>
+                          @if (category.aktif) {
+                            <span class="badge bg-success"><i class="bx bx-check"></i> Aktif</span>
+                          } @else {
+                            <span class="badge bg-danger"><i class="bx bx-x"></i> Pasif</span>
+                          }
+                        </td>
+                        <td class="text-end">
+                          <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-light" (click)="openEditModal(category)" title="Düzenle">
+                              <i class="bx bx-edit"></i>
+                            </button>
+                            <button class="btn btn-sm" 
+                                    [class.btn-warning]="category.aktif"
+                                    [class.btn-success]="!category.aktif"
+                                    (click)="toggleActive(category)">
+                              <i class="bx" [class.bx-lock]="category.aktif" [class.bx-lock-open]="!category.aktif"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" (click)="deleteCategory(category)" title="Sil">
+                              <i class="bx bx-trash"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
         </div>
       </div>
     </div>
   </div>
-
 </div>
 
+<!-- Create/Edit Modal -->
+<div class="modal fade" tabindex="-1" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ editingCategory ? 'Kategori Düzenle' : 'Yeni Kategori Ekle' }}</h5>
+        <button type="button" class="btn-close" (click)="closeModal()"></button>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="mb-3">
+            <label class="form-label">Kategori Adı <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [(ngModel)]="formData.kategoriAdi" name="kategoriAdi" 
+                   placeholder="örn: İçecekler" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Açıklama</label>
+            <textarea class="form-control" rows="2" [(ngModel)]="formData.aciklama" name="aciklama"
+                      placeholder="Kategori hakkında kısa açıklama..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">İptal</button>
+        <button type="button" class="btn btn-primary" (click)="saveCategory()" [disabled]="saving">
+          @if (saving) {
+            <span class="spinner-border spinner-border-sm me-1"></span>
+          }
+          {{ editingCategory ? 'Güncelle' : 'Kaydet' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+@if (showModal) {
+  <div class="modal-backdrop fade show"></div>
+}

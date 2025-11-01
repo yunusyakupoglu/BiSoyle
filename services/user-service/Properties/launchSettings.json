@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "BiSoyle.User.Service": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:51425;http://localhost:51428"
+    }
+  }
+}

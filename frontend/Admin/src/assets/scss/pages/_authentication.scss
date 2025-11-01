@@ -4,7 +4,9 @@
 
 body {
     &.authentication-bg {
-        background: url(../../images/bg-overlay.svg) $primary;
+        background: url(../../images/bg-overlay.svg), linear-gradient(135deg, #e8754f 0%, #a04830 100%);
+        background-size: cover, cover;
+        background-position: center, center;
         padding-bottom: 0;
 
         .account-pages {
