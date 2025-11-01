@@ -131,6 +131,22 @@ app.MapGet("/api/transactions/summary", async (TransactionDbContext dbContext, D
     return Results.Ok(summary);
 });
 
+// Delete transaction
+app.MapDelete("/api/transactions/{id}", async (int id, TransactionDbContext dbContext) =>
+{
+    var transaction = await dbContext.Transactions
+        .Include(t => t.Items)
+        .FirstOrDefaultAsync(t => t.Id == id);
+    
+    if (transaction == null)
+        return Results.NotFound(new { message = "İşlem bulunamadı" });
+    
+    dbContext.Transactions.Remove(transaction);
+    await dbContext.SaveChangesAsync();
+    
+    return Results.Ok(new { message = "İşlem silindi" });
+});
+
 app.MapControllers();
 
 var port = Environment.GetEnvironmentVariable("PORT") ?? "5003";
