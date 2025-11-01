@@ -24,6 +24,7 @@ import { logout } from '@/app/store/authentication/authentication.actions'
 import { Router } from '@angular/router'
 import { activityStreamData, appsData, notificationsData } from './data'
 import { AuthService } from '@/app/services/auth.service'
+import { TransactionRefreshService } from '@/app/services/transaction-refresh.service'
 
 @Component({
   selector: 'app-topbar',
@@ -45,6 +46,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
   store = inject(Store)
   offcanvasService = inject(NgbOffcanvas)
   authService = inject(AuthService)
+  transactionRefreshService = inject(TransactionRefreshService)
 
   notificationList = notificationsData
   appsList = appsData
@@ -440,6 +442,9 @@ export class TopbarComponent implements OnInit, OnDestroy {
         const islemKodu = data.islem_kodu || 'Bilinmiyor'
         console.log(`✓ Fiş oluşturuldu: ${islemKodu} - Toplam: ${data.toplam_tutar} TL`)
         // TODO: PDF olarak indir veya yazıcıya gönder
+        
+        // İşlemler listesini yenile
+        this.transactionRefreshService.triggerRefresh()
       }
     } catch (err) {
       console.error('✗ Yazdırma hatası:', err)

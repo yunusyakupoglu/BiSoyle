@@ -1,8 +1,10 @@
-import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from 'src/app/services/auth.service';
+import { TransactionRefreshService } from 'src/app/services/transaction-refresh.service';
+import { Subscription } from 'rxjs';
 
 interface Islem {
   id: number;
@@ -49,7 +51,7 @@ interface UrunDetayItem {
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './islemler.component.html'
 })
-export class IslemlerComponent implements OnInit {
+export class IslemlerComponent implements OnInit, OnDestroy {
   islemler: Islem[] = [];
   urunler: Urun[] = [];
   olcuBirimleri: OlcuBirimi[] = [];
@@ -59,16 +61,31 @@ export class IslemlerComponent implements OnInit {
   islemKodu: string = '';
   seciliUrunler: UrunDetayItem[] = [];
   toplamTutar: number = 0;
+  
+  private refreshSubscription?: Subscription;
 
   constructor(
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private transactionRefreshService: TransactionRefreshService
   ) {}
 
   ngOnInit() {
     this.islemleriGetir();
     this.urunleriGetir();
     this.olcuBirimleriniGetir();
+    
+    // Transaction refresh event'ini dinle
+    this.refreshSubscription = this.transactionRefreshService.refresh$.subscribe(() => {
+      console.log('Transaction refresh event received, refreshing list...');
+      this.islemleriGetir();
+    });
+  }
+  
+  ngOnDestroy() {
+    if (this.refreshSubscription) {
+      this.refreshSubscription.unsubscribe();
+    }
   }
 
   olcuBirimleriniGetir() {
