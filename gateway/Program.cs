@@ -361,6 +361,37 @@ app.MapGet("/api/v1/transactions", async (HttpContext context, IHttpClientFactor
     return Results.Content(result, "application/json", statusCode: (int)response.StatusCode);
 });
 
+app.MapGet("/api/v1/transactions/{id}", async (int id, HttpContext context, IHttpClientFactory httpClientFactory) =>
+{
+    var client = httpClientFactory.CreateClient();
+    var response = await client.GetAsync($"{transactionServiceUrl}/api/transactions/{id}");
+    var result = await response.Content.ReadAsStringAsync();
+    return Results.Content(result, "application/json", statusCode: (int)response.StatusCode);
+});
+
+app.MapPost("/api/v1/transactions", async (HttpContext context, IHttpClientFactory httpClientFactory) =>
+{
+    var client = httpClientFactory.CreateClient();
+    var body = await new StreamReader(context.Request.Body).ReadToEndAsync();
+    
+    var request = new HttpRequestMessage(HttpMethod.Post, $"{transactionServiceUrl}/api/transactions")
+    {
+        Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json")
+    };
+    
+    var response = await client.SendAsync(request);
+    var result = await response.Content.ReadAsStringAsync();
+    return Results.Content(result, "application/json", statusCode: (int)response.StatusCode);
+});
+
+app.MapDelete("/api/v1/transactions/{id}", async (int id, HttpContext context, IHttpClientFactory httpClientFactory) =>
+{
+    var client = httpClientFactory.CreateClient();
+    var response = await client.DeleteAsync($"{transactionServiceUrl}/api/transactions/{id}");
+    var result = await response.Content.ReadAsStringAsync();
+    return Results.Content(result, "application/json", statusCode: (int)response.StatusCode);
+});
+
 // User Service routes
 app.MapPost("/api/v1/auth/login", async (HttpContext context, IHttpClientFactory httpClientFactory) =>
 {

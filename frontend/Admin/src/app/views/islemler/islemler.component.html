@@ -154,15 +154,15 @@
                   <td><strong>{{ islem.islemKodu || islem.islem_kodu }}</strong></td>
                   <td>
                     <div *ngFor="let item of (islem.items || [])">
-                      <span class="badge bg-primary">{{ item.urunAdi }}</span>
+                      <span class="badge bg-primary">{{ item.urunAdi || '-' }}</span>
                       <small class="text-muted ms-2">
-                        {{ item.miktar }} x {{ item.birimFiyat }}₺ = {{ item.subtotal }}₺
+                        {{ item.miktar || 0 }} x {{ (item.birimFiyat || 0).toFixed(2) }}₺ = {{ (item.subtotal || 0).toFixed(2) }}₺
                       </small>
                     </div>
                     <div *ngIf="!islem.items && islem.urun_detaylari" *ngFor="let item of parseUrunDetaylari(islem.urun_detaylari)">
                       <span class="badge bg-primary">{{ getUrunAdi(item.urun_id) }}</span>
                       <small class="text-muted ms-2">
-                        {{ item.miktar }} x {{ item.birim_fiyat }}₺ = {{ (item.miktar * item.birim_fiyat).toFixed(2) }}₺
+                        {{ item.miktar || 0 }} x {{ (item.birim_fiyat || 0).toFixed(2) }}₺ = {{ ((item.miktar || 0) * (item.birim_fiyat || 0)).toFixed(2) }}₺
                       </small>
                     </div>
                   </td>
