@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using BiSoyle.Receipt.Service.Hubs;
 using BiSoyle.Receipt.Service.Data;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +47,9 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Initialize QuestPDF
+QuestPDF.Settings.License = LicenseType.Community;
 
 // Auto-migrate database
 using (var scope = app.Services.CreateScope())
@@ -169,14 +175,107 @@ app.MapPost("/api/receipt/print", async (HttpContext context, IHubContext<Receip
         // Don't fail the receipt creation if transaction creation fails
     }
     
+    // Create PDF in background
+    _ = Task.Run(() =>
+    {
+        try
+        {
+            var pdfDirectory = Path.GetDirectoryName(pdf_path);
+            if (pdfDirectory != null && !Directory.Exists(pdfDirectory))
+            {
+                Directory.CreateDirectory(pdfDirectory);
+            }
+            
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.Custom(8, page_height: 25)); // 80mm width (thermal printer)
+                    page.Margin(0.5f, Unit.Centimetre);
+                    
+                    page.Content().Column(column =>
+                    {
+                        // Header
+                        column.Item().AlignCenter().Text(islem_kodu).FontSize(12).Bold();
+                        column.Item().PaddingVertical(0.2f, Unit.Centimetre);
+                        
+                        // Company Info
+                        column.Item().AlignCenter().Text("Bi' Soyle POS").FontSize(10);
+                        column.Item().AlignCenter().Text(DateTime.Now.ToString("dd.MM.yyyy HH:mm")).FontSize(8);
+                        column.Item().PaddingVertical(0.2f, Unit.Centimetre);
+                        
+                        // Divider
+                        column.Item().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten1);
+                        column.Item().PaddingVertical(0.2f, Unit.Centimetre);
+                        
+                        // Items
+                        column.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(columns =>
+                            {
+                                columns.RelativeColumn(4); // Product name
+                                columns.RelativeColumn(1);  // Qty
+                                columns.RelativeColumn(2);  // Price
+                                columns.RelativeColumn(2);  // Total
+                            });
+                            
+                            table.Header(header =>
+                            {
+                                header.Cell().Element(CellStyle).Text("Ürün").FontSize(8);
+                                header.Cell().Element(CellStyle).AlignRight().Text("Ad").FontSize(8);
+                                header.Cell().Element(CellStyle).AlignRight().Text("Fiyat").FontSize(8);
+                                header.Cell().Element(CellStyle).AlignRight().Text("Toplam").FontSize(8);
+                            });
+                            
+                            foreach (var item in receipt.Items)
+                            {
+                                table.Cell().Element(CellStyle).Text(item.UrunAdi).FontSize(8);
+                                table.Cell().Element(CellStyle).AlignRight().Text($"{item.Miktar} {item.OlcuBirimi}").FontSize(8);
+                                table.Cell().Element(CellStyle).AlignRight().Text($"{item.BirimFiyat:F2} TL").FontSize(8);
+                                table.Cell().Element(CellStyle).AlignRight().Text($"{item.Subtotal:F2} TL").FontSize(8);
+                            }
+                            
+                            void CellStyle(Action<IContainer> style)
+                            {
+                                style.PaddingVertical(0.1f, Unit.Centimetre).BorderBottom(0.3f).BorderColor(Colors.Grey.Lighten2);
+                            }
+                        });
+                        
+                        column.Item().PaddingVertical(0.2f, Unit.Centimetre);
+                        
+                        // Divider
+                        column.Item().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten1);
+                        column.Item().PaddingVertical(0.2f, Unit.Centimetre);
+                        
+                        // Total
+                        column.Item().Row(row =>
+                        {
+                            row.RelativeItem().AlignRight().Text("TOPLAM:").FontSize(10).Bold();
+                            row.ConstantItem(80).AlignRight().Text($"{toplam_tutar:F2} TL").FontSize(10).Bold();
+                        });
+                        
+                        column.Item().PaddingVertical(0.3f, Unit.Centimetre);
+                        
+                        // Footer
+                        column.Item().AlignCenter().Text("Teşekkür Ederiz!").FontSize(10).Italic();
+                        column.Item().AlignCenter().Text("İyi Günler Dileriz").FontSize(8);
+                    });
+                });
+            });
+            
+            document.GeneratePdf(pdf_path);
+            Console.WriteLine($"PDF created: {pdf_path}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"PDF creation error: {ex.Message}");
+        }
+    });
+    
     // Background tasks
     _ = Task.Run(async () =>
     {
-        // 1. PDF oluştur
-        // 2. RabbitMQ'ya mesaj gönder
-        // 3. SignalR ile real-time bildirim
-        
-        await Task.Delay(100);
+        await Task.Delay(500); // Wait for PDF generation
         await hubContext.Clients.All.SendAsync("receiptComplete", islem_kodu, pdf_path);
     });
     
