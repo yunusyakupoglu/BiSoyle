@@ -1,0 +1,23 @@
+appId: com.bisoyle.pos
+productName: BiSoyle POS
+directories:
+  output: release
+files:
+  - 'dist/reback/**/*'
+  - 'node_modules/**/*'
+  - 'package.json'
+  - 'electron/**/*'
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: 'src/assets/images/logo-light.png'
+  publisherName: BiSoyle
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: BiSoyle POS
+

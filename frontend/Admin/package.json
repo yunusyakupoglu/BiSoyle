@@ -1,13 +1,18 @@
 {
   "name": "reback",
   "version": "0.0.0",
+  "main": "electron/main.js",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "format": "prettier --write src/**/*.{ts,html}"
+    "format": "prettier --write src/**/*.{ts,html}",
+    "electron": "electron .",
+    "electron:dev": "concurrently \"ng serve\" \"wait-on http://localhost:4200 && electron .\"",
+    "electron:build": "ng build --base-href ./ && electron-builder",
+    "electron:build:win": "ng build --base-href ./ && electron-builder --win"
   },
   "private": true,
   "dependencies": {
@@ -77,6 +82,9 @@
     "@angular/compiler-cli": "^19.0.0",
     "@angular/localize": "^19.0.0",
     "@types/jasmine": "~5.1.0",
+    "concurrently": "^8.2.2",
+    "electron": "^30.5.1",
+    "electron-builder": "^24.13.3",
     "jasmine-core": "~5.1.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
@@ -84,6 +92,7 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "typescript": "~5.8.3",
-    "vite": "^6.2.5"
+    "vite": "^6.2.5",
+    "wait-on": "^7.2.0"
   }
 }
