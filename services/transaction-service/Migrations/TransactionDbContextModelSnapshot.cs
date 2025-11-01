@@ -60,12 +60,22 @@ namespace BiSoyle.Transaction.Service.Migrations
                     b.Property<decimal>("ToplamTutar")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("IslemKodu")
-                        .IsUnique();
+                    b.HasIndex("IslemKodu");
 
                     b.HasIndex("IslemTipi");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("TenantId", "IslemKodu")
+                        .IsUnique();
 
                     b.ToTable("transactions", (string)null);
                 });

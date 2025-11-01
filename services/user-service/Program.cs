@@ -282,7 +282,7 @@ app.MapGet("/api/users", async (UserDbContext dbContext) =>
         .ToListAsync();
     
     return Results.Ok(users);
-}).RequireAuthorization(policy => policy.RequireRole("Admin"));
+}).RequireAuthorization(policy => policy.RequireRole("Admin", "SuperAdmin"));
 
 // Get user by ID
 app.MapGet("/api/users/{id}", async (int id, UserDbContext dbContext) =>
