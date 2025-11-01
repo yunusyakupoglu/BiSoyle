@@ -127,6 +127,48 @@ app.MapPost("/api/receipt/print", async (HttpContext context, IHubContext<Receip
         return Results.Problem($"Veritabanı hatası: {ex.Message}");
     }
     
+    // Create corresponding transaction in Transaction Service
+    try
+    {
+        using var httpClient = new HttpClient();
+        var transactionData = new
+        {
+            TenantId = data.TenantId,
+            UserId = data.UserId,
+            IslemKodu = islem_kodu,
+            IslemTipi = "SATIS",
+            OdemeTipi = "NAKIT",
+            ToplamTutar = toplam_tutar,
+            Items = data.Items.Select(item => new
+            {
+                UrunId = item.UrunId,
+                UrunAdi = item.Product,
+                Miktar = item.Quantity,
+                BirimFiyat = item.Price,
+                Subtotal = item.Quantity * item.Price
+            }).ToList()
+        };
+        
+        var transactionJson = JsonSerializer.Serialize(transactionData);
+        var content = new StringContent(transactionJson, System.Text.Encoding.UTF8, "application/json");
+        var transactionUrl = Environment.GetEnvironmentVariable("TRANSACTION_SERVICE_URL") ?? "http://localhost:5003";
+        var response = await httpClient.PostAsync($"{transactionUrl}/api/transactions", content);
+        
+        if (response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"Transaction created successfully for receipt {islem_kodu}");
+        }
+        else
+        {
+            Console.WriteLine($"Failed to create transaction: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error creating transaction: {ex.Message}");
+        // Don't fail the receipt creation if transaction creation fails
+    }
+    
     // Background tasks
     _ = Task.Run(async () =>
     {
