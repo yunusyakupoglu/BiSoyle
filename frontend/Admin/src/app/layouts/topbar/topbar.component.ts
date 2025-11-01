@@ -418,11 +418,12 @@ export class TopbarComponent implements OnInit, OnDestroy {
         this.productCacheTime = now
       }
       
-      // Ürünü ara
+      // Ürünü ara - sadece DB'deki tam isim varsa kabul et
+      const searchName = productName.toLowerCase().trim()
       const found = this.productCache.find((p: any) => {
-        const dbName = (p.urunAdi || p.UrunAdi || '').toLowerCase()
-        const searchName = productName.toLowerCase()
-        return dbName.includes(searchName) || searchName.includes(dbName)
+        const dbName = (p.urunAdi || p.UrunAdi || '').toLowerCase().trim()
+        // Sadece tam eşleşme veya DB ismi aranan kelimeleri içeriyorsa geçerli
+        return dbName === searchName || dbName.includes(searchName)
       })
       
       return !!found
