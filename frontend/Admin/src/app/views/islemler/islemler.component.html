@@ -64,7 +64,7 @@
                         (ngModelChange)="onUrunSelected(i, $event)">
                         <option [value]="0">Ürün Seçin</option>
                         <option *ngFor="let urun of urunler" [value]="urun.id">
-                          {{ urun.urun_adi }}
+                          {{ urun.urunAdi || urun.urun_adi }}
                         </option>
                       </select>
                     </td>
@@ -151,17 +151,23 @@
               <tbody>
                 <tr *ngFor="let islem of islemler">
                   <td>{{ islem.id }}</td>
-                  <td><strong>{{ islem.islem_kodu }}</strong></td>
+                  <td><strong>{{ islem.islemKodu || islem.islem_kodu }}</strong></td>
                   <td>
-                    <div *ngFor="let item of parseUrunDetaylari(islem.urun_detaylari)">
+                    <div *ngFor="let item of (islem.items || [])">
+                      <span class="badge bg-primary">{{ item.urunAdi }}</span>
+                      <small class="text-muted ms-2">
+                        {{ item.miktar }} x {{ item.birimFiyat }}₺ = {{ item.subtotal }}₺
+                      </small>
+                    </div>
+                    <div *ngIf="!islem.items && islem.urun_detaylari" *ngFor="let item of parseUrunDetaylari(islem.urun_detaylari)">
                       <span class="badge bg-primary">{{ getUrunAdi(item.urun_id) }}</span>
                       <small class="text-muted ms-2">
                         {{ item.miktar }} x {{ item.birim_fiyat }}₺ = {{ (item.miktar * item.birim_fiyat).toFixed(2) }}₺
                       </small>
                     </div>
                   </td>
-                  <td><strong>{{ islem.toplam_tutar.toFixed(2) }}₺</strong></td>
-                  <td>{{ islem.created_at | date:'dd.MM.yyyy HH:mm' }}</td>
+                  <td><strong>{{ (islem.toplamTutar || islem.toplam_tutar || 0).toFixed(2) }}₺</strong></td>
+                  <td>{{ (islem.olusturmaTarihi || islem.created_at) | date:'dd.MM.yyyy HH:mm' }}</td>
                   <td>
                     <button 
                       class="btn btn-danger btn-sm" 

@@ -396,15 +396,15 @@ export class TopbarComponent implements OnInit, OnDestroy {
       // Receipt items'a fiyat ekle - parametreden gelen items kullan
       const enrichedItems = items.map((item: any) => {
         const matchedUrun = urunler.find((u: any) => 
-          u.urun_adi.toLowerCase().includes(item.product.toLowerCase()) ||
-          item.product.toLowerCase().includes(u.urun_adi.toLowerCase())
+          (u.urunAdi || u.UrunAdi || '').toLowerCase().includes(item.product?.toLowerCase() || '') ||
+          (item.product?.toLowerCase() || '').includes((u.urunAdi || u.UrunAdi || '').toLowerCase())
         )
         return {
           Quantity: item.quantity,      // Backend büyük harf bekliyor
           Unit: item.unit,               // Backend büyük harf bekliyor
           Product: item.product,         // Backend büyük harf bekliyor
-          Price: matchedUrun ? matchedUrun.birim_fiyat : 0,  // Backend büyük harf bekliyor
-          UrunId: matchedUrun ? matchedUrun.id : 0
+          Price: matchedUrun ? (matchedUrun.birimFiyat || matchedUrun.BirimFiyat || 0) : 0,  // Backend büyük harf bekliyor
+          UrunId: matchedUrun ? (matchedUrun.id || matchedUrun.Id || 0) : 0
         }
       })
 

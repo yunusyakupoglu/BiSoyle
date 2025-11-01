@@ -6,23 +6,34 @@ import { AuthService } from 'src/app/services/auth.service';
 
 interface Islem {
   id: number;
-  islem_kodu: string;
-  urun_detaylari: string;
-  toplam_tutar: number;
-  created_at: string;
+  islemKodu?: string;
+  islem_kodu?: string; // Backward compatibility
+  islemTipi?: string;
+  urun_detaylari?: string;
+  items?: any[];
+  toplamTutar?: number;
+  toplam_tutar?: number; // Backward compatibility
+  olusturmaTarihi?: string;
+  created_at?: string; // Backward compatibility
 }
 
 interface Urun {
   id: number;
-  urun_adi: string;
-  birim_fiyat: number;
-  kategori_id: number;
-  olcu_birimi_id: number;
+  urunAdi: string;
+  urun_adi?: string; // Backward compatibility
+  birimFiyat: number;
+  birim_fiyat?: number; // Backward compatibility
+  kategoriId?: number;
+  kategori_id?: number; // Backward compatibility
+  olcuBirimi?: string;
+  olcu_birimi?: string; // Backward compatibility
 }
 
 interface OlcuBirimi {
   id: number;
-  olcu_birimi_adi: string;
+  birimAdi: string;
+  birim_adi?: string; // Backward compatibility
+  kisaltma?: string;
 }
 
 interface UrunDetayItem {
@@ -61,7 +72,7 @@ export class IslemlerComponent implements OnInit {
   }
 
   olcuBirimleriniGetir() {
-    this.http.get<OlcuBirimi[]>('http://localhost:8000/olcu-birimleri', { headers: this.headers }).subscribe({
+    this.http.get<OlcuBirimi[]>('http://localhost:5000/api/v1/unit-of-measures', { headers: this.headers }).subscribe({
       next: (data) => this.olcuBirimleri = data,
       error: (err) => console.error('Olcu birimleri yüklenemedi:', err)
     });
@@ -76,7 +87,7 @@ export class IslemlerComponent implements OnInit {
 
   islemleriGetir() {
     this.yukleniyor = true;
-    this.http.get<Islem[]>('http://localhost:8000/islemler', { headers: this.headers }).subscribe({
+    this.http.get<Islem[]>('http://localhost:5000/api/v1/transactions', { headers: this.headers }).subscribe({
       next: (data) => {
         this.islemler = data;
         this.yukleniyor = false;
@@ -89,7 +100,7 @@ export class IslemlerComponent implements OnInit {
   }
 
   urunleriGetir() {
-    this.http.get<Urun[]>('http://localhost:8000/urunler', { headers: this.headers }).subscribe({
+    this.http.get<Urun[]>('http://localhost:5000/api/v1/products', { headers: this.headers }).subscribe({
       next: (data) => {
         this.urunler = data;
       },
@@ -141,20 +152,20 @@ export class IslemlerComponent implements OnInit {
 
   getUrunAdi(urunId: number): string {
     const urun = this.urunler.find(u => u.id === urunId);
-    return urun ? urun.urun_adi : '-';
+    return urun ? (urun.urunAdi || urun.urun_adi || '-') : '-';
   }
 
   getUrunBirimFiyat(urunId: number): number {
     const urun = this.urunler.find(u => u.id === urunId);
-    return urun ? urun.birim_fiyat : 0;
+    return urun ? (urun.birimFiyat || urun.birim_fiyat || 0) : 0;
   }
 
   getUrunOlcuBirimi(urunId: number): string {
     const urun = this.urunler.find(u => u.id === urunId);
     if (!urun) return '';
     
-    const olcu = this.olcuBirimleri.find(ob => ob.id === urun.olcu_birimi_id);
-    return olcu ? olcu.olcu_birimi_adi : '';
+    const olcu = this.olcuBirimleri.find(ob => ob.id === (urun.kategoriId || urun.kategori_id || 0));
+    return olcu ? (olcu.birimAdi || olcu.birim_adi || olcu.kisaltma || '') : '';
   }
 
   onUrunSelected(index: number, event: any) {
@@ -191,20 +202,31 @@ export class IslemlerComponent implements OnInit {
       return;
     }
 
-    // Send urun_detaylari with actual birim_fiyat from products
-    const urunDetaylari = this.seciliUrunler.map(item => ({
-      urun_id: item.urun_id,
-      miktar: item.miktar,
-      birim_fiyat: this.getUrunBirimFiyat(item.urun_id)
-    }));
+    // Send Items with actual birimFiyat from products
+    const items = this.seciliUrunler.map(item => {
+      const urun = this.urunler.find(u => u.id === item.urun_id);
+      return {
+        urunId: item.urun_id,
+        urunAdi: urun ? (urun.urunAdi || urun.urun_adi || '') : '',
+        miktar: item.miktar,
+        birimFiyat: this.getUrunBirimFiyat(item.urun_id),
+        subtotal: this.getUrunBirimFiyat(item.urun_id) * item.miktar
+      };
+    });
 
+    // Get user info for TenantId and UserId
+    const user = this.authService.getUser();
     const yeniIslem = {
-      islem_kodu: this.islemKodu,
-      urun_detaylari: urunDetaylari,
-      toplam_tutar: this.toplamTutar
+      tenantId: user?.tenantId || 1,
+      userId: user?.id || 1,
+      islemKodu: this.islemKodu,
+      islemTipi: 'SATIS',
+      odemeTipi: 'NAKIT',
+      items: items,
+      toplamTutar: this.toplamTutar
     };
 
-    this.http.post<Islem>('http://localhost:8000/islemler', yeniIslem, { headers: this.headers }).subscribe({
+    this.http.post<Islem>('http://localhost:5000/api/v1/transactions', yeniIslem, { headers: this.headers }).subscribe({
       next: () => {
         alert('İşlem eklendi');
         this.islemleriGetir();
@@ -221,7 +243,7 @@ export class IslemlerComponent implements OnInit {
 
   islemSil(id: number) {
     if (confirm('Bu işlemi silmek istediğinizden emin misiniz?')) {
-      this.http.delete(`http://localhost:8000/islemler/${id}`, { headers: this.headers }).subscribe({
+      this.http.delete(`http://localhost:5000/api/v1/transactions/${id}`, { headers: this.headers }).subscribe({
         next: () => {
           alert('İşlem silindi');
           this.islemleriGetir();
