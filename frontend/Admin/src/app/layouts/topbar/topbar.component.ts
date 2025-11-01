@@ -368,12 +368,26 @@ export class TopbarComponent implements OnInit, OnDestroy {
 
   async parseProductFromVoice(text: string): Promise<void> {
     // Örnek: "3 adet patatesli poğaça" veya "yarım kilo cevizli baklava" veya "3 çikolatalı kruvasan"
+    
+    // Yazılı sayı eşleştirme fonksiyonu
+    const wordToNumber = (word: string): number => {
+      const map: { [key: string]: number } = {
+        'bir': 1, 'iki': 2, 'üç': 3, 'dört': 4, 'beş': 5,
+        'altı': 6, 'yedi': 7, 'sekiz': 8, 'dokuz': 9, 'on': 10,
+        'onbir': 11, 'oniki': 12, 'onüç': 13, 'ondört': 14, 'onbeş': 15,
+        'onaltı': 16, 'onyedi': 17, 'onsekiz': 18, 'ondokuz': 19, 'yirmi': 20
+      }
+      return map[word.toLowerCase()] || 0
+    }
+    
     const patterns = [
-      // ÖNCELIK 1: "yarım kilo" gibi özel durumlar
+      // ÖNCELIK 1: "bir adet" gibi yazılı sayı + birim
+      { regex: /(bir|iki|üç|dört|beş|altı|yedi|sekiz|dokuz|on|onbir|oniki|onüç|ondört|onbeş|onaltı|onyedi|onsekiz|ondokuz|yirmi)\s*(adet|adette|tane|tanes?)\s+(.+)/i, extract: (m: any) => ({ quantity: wordToNumber(m[1]), unit: 'adet', product: m[3].trim() }) },
+      // ÖNCELIK 2: "yarım kilo" gibi özel durumlar
       { regex: /(yarım|yarim)\s*(kilo|kg)\s+(.+)/i, extract: (m: any) => ({ quantity: 0.5, unit: 'kg', product: m[3].trim() }) },
-      // ÖNCELIK 2: "3 adet" gibi açık belirtilen durumlar
+      // ÖNCELIK 3: "3 adet" gibi açık belirtilen durumlar
       { regex: /(\d+)\s*(adet|adette|tane|tanes?)\s+(.+)/i, extract: (m: any) => ({ quantity: parseInt(m[1]), unit: 'adet', product: m[3].trim() }) },
-      // ÖNCELIK 3: "3 kilo" veya "2 kg" - KİLO önce kontrol edilmeli
+      // ÖNCELIK 4: "3 kilo" veya "2 kg" - KİLO önce kontrol edilmeli
       { regex: /(\d+\.?\d*)\s*(kilo|kg)\s+(.+)/i, extract: (m: any) => ({ quantity: parseFloat(m[1]), unit: 'kg', product: m[3].trim() }) },
       // FALLBACK: Sadece sayı var ama birim yok - otomatik "adet"
       { regex: /(\d+)\s+(.+)/i, extract: (m: any) => ({ quantity: parseInt(m[1]), unit: 'adet', product: m[2].trim() }) },
