@@ -190,75 +190,70 @@ app.MapPost("/api/receipt/print", async (HttpContext context, IHubContext<Receip
             {
                 container.Page(page =>
                 {
-                    page.Size(PageSizes.Custom(8, page_height: 25)); // 80mm width (thermal printer)
-                    page.Margin(0.5f, Unit.Centimetre);
+                    page.Size(PageSizes.A4.Rotate()); // Rotate for better receipt format
+                    page.Margin(1f, Unit.Centimetre);
                     
                     page.Content().Column(column =>
                     {
                         // Header
-                        column.Item().AlignCenter().Text(islem_kodu).FontSize(12).Bold();
-                        column.Item().PaddingVertical(0.2f, Unit.Centimetre);
+                        column.Item().AlignCenter().Text(islem_kodu).FontSize(14).Bold();
+                        column.Item().PaddingVertical(0.3f, Unit.Centimetre);
                         
                         // Company Info
-                        column.Item().AlignCenter().Text("Bi' Soyle POS").FontSize(10);
-                        column.Item().AlignCenter().Text(DateTime.Now.ToString("dd.MM.yyyy HH:mm")).FontSize(8);
-                        column.Item().PaddingVertical(0.2f, Unit.Centimetre);
+                        column.Item().AlignCenter().Text("Bi' Soyle POS").FontSize(12);
+                        column.Item().AlignCenter().Text(DateTime.Now.ToString("dd.MM.yyyy HH:mm")).FontSize(10);
+                        column.Item().PaddingVertical(0.3f, Unit.Centimetre);
                         
                         // Divider
-                        column.Item().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten1);
-                        column.Item().PaddingVertical(0.2f, Unit.Centimetre);
+                        column.Item().BorderBottom(1f).BorderColor(Colors.Grey.Lighten1);
+                        column.Item().PaddingVertical(0.3f, Unit.Centimetre);
                         
-                        // Items
-                        column.Item().Table(table =>
+                        // Items - Simple column layout
+                        column.Item().Column(itemsColumn =>
                         {
-                            table.ColumnsDefinition(columns =>
+                            itemsColumn.Item().Row(row =>
                             {
-                                columns.RelativeColumn(4); // Product name
-                                columns.RelativeColumn(1);  // Qty
-                                columns.RelativeColumn(2);  // Price
-                                columns.RelativeColumn(2);  // Total
+                                row.RelativeItem().Text("Ürün").FontSize(9).Bold();
+                                row.ConstantItem(60).AlignRight().Text("Ad").FontSize(9).Bold();
+                                row.ConstantItem(80).AlignRight().Text("Fiyat").FontSize(9).Bold();
+                                row.ConstantItem(100).AlignRight().Text("Toplam").FontSize(9).Bold();
                             });
                             
-                            table.Header(header =>
-                            {
-                                header.Cell().Element(CellStyle).Text("Ürün").FontSize(8);
-                                header.Cell().Element(CellStyle).AlignRight().Text("Ad").FontSize(8);
-                                header.Cell().Element(CellStyle).AlignRight().Text("Fiyat").FontSize(8);
-                                header.Cell().Element(CellStyle).AlignRight().Text("Toplam").FontSize(8);
-                            });
+                            itemsColumn.Item().PaddingVertical(0.2f, Unit.Centimetre);
+                            itemsColumn.Item().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2);
+                            itemsColumn.Item().PaddingVertical(0.2f, Unit.Centimetre);
                             
                             foreach (var item in receipt.Items)
                             {
-                                table.Cell().Element(CellStyle).Text(item.UrunAdi).FontSize(8);
-                                table.Cell().Element(CellStyle).AlignRight().Text($"{item.Miktar} {item.OlcuBirimi}").FontSize(8);
-                                table.Cell().Element(CellStyle).AlignRight().Text($"{item.BirimFiyat:F2} TL").FontSize(8);
-                                table.Cell().Element(CellStyle).AlignRight().Text($"{item.Subtotal:F2} TL").FontSize(8);
+                                itemsColumn.Item().Row(row =>
+                                {
+                                    row.RelativeItem().Text(item.UrunAdi).FontSize(9);
+                                    row.ConstantItem(60).AlignRight().Text($"{item.Miktar} {item.OlcuBirimi}").FontSize(9);
+                                    row.ConstantItem(80).AlignRight().Text($"{item.BirimFiyat:F2} TL").FontSize(9);
+                                    row.ConstantItem(100).AlignRight().Text($"{item.Subtotal:F2} TL").FontSize(9);
+                                });
+                                itemsColumn.Item().PaddingVertical(0.1f, Unit.Centimetre);
                             }
-                            
-                            void CellStyle(Action<IContainer> style)
-                            {
-                                style.PaddingVertical(0.1f, Unit.Centimetre).BorderBottom(0.3f).BorderColor(Colors.Grey.Lighten2);
-                            }
-                        });
-                        
-                        column.Item().PaddingVertical(0.2f, Unit.Centimetre);
-                        
-                        // Divider
-                        column.Item().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten1);
-                        column.Item().PaddingVertical(0.2f, Unit.Centimetre);
-                        
-                        // Total
-                        column.Item().Row(row =>
-                        {
-                            row.RelativeItem().AlignRight().Text("TOPLAM:").FontSize(10).Bold();
-                            row.ConstantItem(80).AlignRight().Text($"{toplam_tutar:F2} TL").FontSize(10).Bold();
                         });
                         
                         column.Item().PaddingVertical(0.3f, Unit.Centimetre);
                         
+                        // Divider
+                        column.Item().BorderBottom(1f).BorderColor(Colors.Grey.Lighten1);
+                        column.Item().PaddingVertical(0.3f, Unit.Centimetre);
+                        
+                        // Total
+                        column.Item().Row(row =>
+                        {
+                            row.RelativeItem().AlignRight().Text("TOPLAM:").FontSize(12).Bold();
+                            row.ConstantItem(150).AlignRight().Text($"{toplam_tutar:F2} TL").FontSize(12).Bold();
+                        });
+                        
+                        column.Item().PaddingVertical(0.5f, Unit.Centimetre);
+                        
                         // Footer
-                        column.Item().AlignCenter().Text("Teşekkür Ederiz!").FontSize(10).Italic();
-                        column.Item().AlignCenter().Text("İyi Günler Dileriz").FontSize(8);
+                        column.Item().AlignCenter().Text("Teşekkür Ederiz!").FontSize(11).Italic();
+                        column.Item().AlignCenter().Text("İyi Günler Dileriz").FontSize(10);
                     });
                 });
             });
