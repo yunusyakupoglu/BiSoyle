@@ -390,7 +390,11 @@ export class TopbarComponent implements OnInit, OnDestroy {
     try {
       console.log('printReceipt çağrıldı, items:', items)
       
+      // Notification: İşlem başlatıldı
+      this.addVoiceNotification('Sistem', 'Fiş işleniyor...')
+      
       // HIZLANDIRMA: Gateway üzerinden ürün fiyatlarını paralel çek
+      this.addVoiceNotification('Sistem', 'Ürün bilgileri alınıyor...')
       const urunler = await fetch('http://localhost:5000/api/v1/products', {
         headers: { 'Authorization': `Bearer ${this.authService.getToken()}` }
       }).then(r => r.json())
@@ -420,6 +424,9 @@ export class TopbarComponent implements OnInit, OnDestroy {
         UserId: user?.id || 1
       }
 
+      // Notification: Fiş oluşturuluyor
+      this.addVoiceNotification('Sistem', 'Fiş oluşturuluyor...')
+
       // Backend API'ye istek at - Gateway üzerinden
       const printResponse = await fetch('http://localhost:5000/api/v1/receipt/print', {
         method: 'POST',
@@ -433,6 +440,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
       if (!printResponse.ok) {
         const errorText = await printResponse.text()
         console.error('Backend error:', printResponse.status, errorText)
+        this.addVoiceNotification('Sistem', 'Fiş oluşturulamadı! Hata oluştu.')
         throw new Error(`Backend error: ${printResponse.status}`)
       }
       
@@ -440,14 +448,19 @@ export class TopbarComponent implements OnInit, OnDestroy {
       
       if (data.ok) {
         const islemKodu = data.islem_kodu || 'Bilinmiyor'
-        console.log(`✓ Fiş oluşturuldu: ${islemKodu} - Toplam: ${data.toplam_tutar} TL`)
-        // TODO: PDF olarak indir veya yazıcıya gönder
+        const toplamTutar = data.toplam_tutar || 0
+        console.log(`✓ Fiş oluşturuldu: ${islemKodu} - Toplam: ${toplamTutar} TL`)
+        
+        // Notification: Başarılı
+        this.addVoiceNotification('Sistem', `Fiş oluşturuldu: ${islemKodu} (${toplamTutar} TL)`)
         
         // İşlemler listesini yenile
         this.transactionRefreshService.triggerRefresh()
+        this.addVoiceNotification('Sistem', 'İşlemler listesi yenilendi')
       }
     } catch (err) {
       console.error('✗ Yazdırma hatası:', err)
+      this.addVoiceNotification('Sistem', 'Fiş yazdırma hatası oluştu!')
     }
   }
 
