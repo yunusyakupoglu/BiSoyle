@@ -159,12 +159,14 @@
                         {{ item.miktar || 0 }} x {{ (item.birimFiyat || 0).toFixed(2) }}₺ = {{ (item.subtotal || 0).toFixed(2) }}₺
                       </small>
                     </div>
-                    <div *ngIf="!islem.items && islem.urun_detaylari" *ngFor="let item of parseUrunDetaylari(islem.urun_detaylari)">
-                      <span class="badge bg-primary">{{ getUrunAdi(item.urun_id) }}</span>
-                      <small class="text-muted ms-2">
-                        {{ item.miktar || 0 }} x {{ (item.birim_fiyat || 0).toFixed(2) }}₺ = {{ ((item.miktar || 0) * (item.birim_fiyat || 0)).toFixed(2) }}₺
-                      </small>
-                    </div>
+                    <ng-container *ngIf="!islem.items && islem.urun_detaylari">
+                      <div *ngFor="let item of parseUrunDetaylari(islem.urun_detaylari!)">
+                        <span class="badge bg-primary">{{ getUrunAdi(item.urun_id) }}</span>
+                        <small class="text-muted ms-2">
+                          {{ item.miktar || 0 }} x {{ (item.birim_fiyat || 0).toFixed(2) }}₺ = {{ ((item.miktar || 0) * (item.birim_fiyat || 0)).toFixed(2) }}₺
+                        </small>
+                      </div>
+                    </ng-container>
                   </td>
                   <td><strong>{{ (islem.toplamTutar || islem.toplam_tutar || 0).toFixed(2) }}₺</strong></td>
                   <td>{{ (islem.olusturmaTarihi || islem.created_at) | date:'dd.MM.yyyy HH:mm' }}</td>
