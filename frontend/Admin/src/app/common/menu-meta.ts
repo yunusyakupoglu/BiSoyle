@@ -72,6 +72,13 @@ export const MENU: MenuItem[] = [
     link: '/islemler',
     roles: ['Admin', 'User'],
   },
+  {
+    key: 'izinler',
+    icon: 'iconamoon:shield-check-duotone',
+    label: 'İzinler',
+    link: '/izinler',
+    roles: ['Admin', 'User'],
+  },
 
   // ======================
   // ADMIN ONLY

@@ -6,6 +6,7 @@ import { OlcuBirimleriComponent } from './olcu-birimleri/olcu-birimleri.componen
 import { IslemlerComponent } from './islemler/islemler.component'
 import { KullanicilarComponent } from './kullanicilar/kullanicilar.component'
 import { CihazlarComponent } from './cihazlar/cihazlar.component'
+import { IzinlerComponent } from './izinler/izinler.component'
 import { AuthGuard } from '../guards/auth.guard'
 import { adminGuard, userGuard, superAdminGuard } from '../guards/role.guard'
 
@@ -42,6 +43,12 @@ export const VIEW_ROUTES: Route[] = [
     component: IslemlerComponent,
     canActivate: [userGuard],
     data: { title: 'İşlemler', roles: ['Admin', 'User'] },
+  },
+  {
+    path: 'izinler',
+    component: IzinlerComponent,
+    canActivate: [userGuard],
+    data: { title: 'İzinler', roles: ['Admin', 'User'] },
   },
 
   // ========================

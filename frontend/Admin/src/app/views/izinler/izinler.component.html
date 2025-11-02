@@ -1,0 +1,135 @@
+<div class="container-fluid">
+  <!-- Page Title -->
+  <div class="row">
+    <div class="col-sm-12">
+      <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+        <h4 class="mb-sm-0">İzinler</h4>
+        <div class="page-title-right">
+          <ol class="breadcrumb m-0">
+            <li class="breadcrumb-item"><a href="javascript: void(0);">Ayarlar</a></li>
+            <li class="breadcrumb-item active">İzinler</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mikrofon İzni -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex align-items-center">
+            <iconify-icon icon="iconamoon:microphone-duotone" class="fs-24 me-2"></iconify-icon>
+            <h5 class="mb-0">Mikrofon İzni</h5>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Permission Status -->
+          <div class="row mb-4">
+            <div class="col-md-12">
+              <div class="d-flex align-items-center mb-3">
+                <span class="badge bg-{{ getPermissionStatusClass() }} me-3 fs-14">
+                  {{ getPermissionStatusText() }}
+                </span>
+                <div class="spinner-border spinner-border-sm text-primary" role="status" *ngIf="isCheckingPermission">
+                  <span class="visually-hidden">Kontrol ediliyor...</span>
+                </div>
+              </div>
+              <p class="text-muted mb-3">
+                {{ getPermissionDescription() }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Error Message -->
+          <div class="alert alert-danger" *ngIf="errorMessage">
+            <iconify-icon icon="iconamoon:warning-duotone" class="fs-18 me-2"></iconify-icon>
+            {{ errorMessage }}
+          </div>
+
+          <!-- Success Message -->
+          <div class="alert alert-success" *ngIf="microphonePermission === 'granted' && !isCheckingPermission">
+            <iconify-icon icon="iconamoon:shield-check-duotone" class="fs-18 me-2"></iconify-icon>
+            Mikrofon izni başarıyla verildi! Sesli komut özelliklerini kullanabilirsiniz.
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="d-flex gap-2">
+            <button 
+              type="button" 
+              class="btn btn-primary"
+              (click)="requestMicrophonePermission()"
+              [disabled]="isDisabled()"
+              *ngIf="shouldShowRequestButton()">
+              <iconify-icon icon="iconamoon:shield-check-duotone" class="fs-18 me-2"></iconify-icon>
+              Mikrofon İznini Ver
+            </button>
+            
+            <button 
+              type="button" 
+              class="btn btn-secondary"
+              (click)="checkMicrophonePermission()"
+              [disabled]="isCheckingPermission">
+              <iconify-icon icon="iconamoon:reload-duotone" class="fs-18 me-2"></iconify-icon>
+              Durumu Yenile
+            </button>
+          </div>
+
+          <!-- Additional Info -->
+          <div class="mt-4">
+            <div class="alert alert-info">
+              <iconify-icon icon="iconamoon:info-duotone" class="fs-18 me-2"></iconify-icon>
+              <strong>Neden mikrofon izni gereklidir?</strong>
+              <ul class="mb-0 mt-2">
+                <li>Sesli komutları dinleyebilmek için</li>
+                <li>Speaker ID (Ses Tanıma) özelliğini kullanmak için</li>
+                <li>Fiş oluşturma gibi sesli komutları işlemek için</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Help -->
+          <div class="mt-4">
+            <h6 class="fw-semibold mb-2">
+              <iconify-icon icon="iconamoon:question-mark-duotone" class="fs-18 me-2"></iconify-icon>
+              İzin nasıl verilir?
+            </h6>
+            <div class="card border">
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-12">
+                    <h6 class="text-muted">Tarayıcı Ayarları:</h6>
+                    <ol class="text-muted mb-0">
+                      <li>Adres çubuğunda kilit simgesine tıklayın</li>
+                      <li>"Siteler" bölümünden "İzinler" kısmını açın</li>
+                      <li>"Mikrofon" iznini "İzin Ver" olarak değiştirin</li>
+                      <li>Sayfayı yenileyin</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Additional Permissions (for future use) -->
+  <div class="row mt-3">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0 text-muted">Diğer İzinler</h6>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-0">
+            <iconify-icon icon="iconamoon:coming-soon-duotone" class="fs-18 me-2"></iconify-icon>
+            Yakında eklenmesi planlanan izinler...
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
