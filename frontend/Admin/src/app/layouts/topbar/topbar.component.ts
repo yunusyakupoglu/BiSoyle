@@ -139,6 +139,12 @@ export class TopbarComponent implements OnInit, OnDestroy {
   }
 
   startListening(): void {
+    // Mikrofon izni kontrolü
+    if (this.microphonePermission === 'denied') {
+      this.addVoiceNotification('Sistem', 'Mikrofon izni reddedilmiş. Lütfen İzinler sayfasından izin verin.')
+      return
+    }
+
     // WebSocket ile konuşmacı tanıma - Voice Service (Python)
     const wsProto = location.protocol === 'https:' ? 'wss' : 'ws'
     this.ws = new WebSocket(`${wsProto}://localhost:8766`)
@@ -178,13 +184,15 @@ export class TopbarComponent implements OnInit, OnDestroy {
       this.recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error)
         
-        // Network hatası için bildirim göster
-        if (event.error === 'network') {
+        // Network ve not-allowed hatası için bildirim göster
+        if (event.error === 'network' || event.error === 'not-allowed') {
           this.addVoiceNotification('Sistem', 'Mikrofon erişimi reddedildi! Lütfen izinleri kontrol edin.')
+          this.microphonePermission = 'denied'
+          this.stopListening()
         }
         
         // Hata olsa bile tekrar başlat
-        if (this.isListening && this.recognition && event.error !== 'no-speech') {
+        if (this.isListening && this.recognition && event.error !== 'no-speech' && event.error !== 'not-allowed' && event.error !== 'network') {
           setTimeout(() => {
             if (this.isListening && this.recognition) {
               try {
@@ -201,6 +209,8 @@ export class TopbarComponent implements OnInit, OnDestroy {
     this.ws.onopen = async () => {
       try {
         this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        // İzin verildiğinde durumu güncelle
+        this.microphonePermission = 'granted'
         this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
         const source = this.audioContext.createMediaStreamSource(this.mediaStream)
         this.processor = this.audioContext.createScriptProcessor(2048, 1, 1)
@@ -231,8 +241,10 @@ export class TopbarComponent implements OnInit, OnDestroy {
         source.connect(this.processor)
         this.processor.connect(this.audioContext.destination)
         this.isListening = true
-      } catch (err) {
+      } catch (err: any) {
         console.error('Mikrofon erişimi hatası:', err)
+        this.microphonePermission = 'denied'
+        this.addVoiceNotification('Sistem', 'Mikrofon erişimi reddedildi! Lütfen izinleri kontrol edin.')
         this.stopListening()
       }
     }

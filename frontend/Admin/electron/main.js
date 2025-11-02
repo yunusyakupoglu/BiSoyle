@@ -17,8 +17,9 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       enableRemoteModule: false,
-      webSecurity: true,
-      preload: path.join(__dirname, 'preload.js')
+      webSecurity: false, // For localhost development
+      preload: path.join(__dirname, 'preload.js'),
+      sandbox: false
     },
     autoHideMenuBar: false,
     frame: true,
@@ -55,10 +56,20 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  // Configure microphone permissions
+  // Configure permissions - automatically grant microphone, camera, notifications
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-    const allowedPermissions = ['microphone', 'camera', 'notifications'];
-    callback(allowedPermissions.includes(permission));
+    const allowedPermissions = ['microphone', 'camera', 'notifications', 'media'];
+    if (allowedPermissions.includes(permission)) {
+      callback(true);
+    } else {
+      callback(false);
+    }
+  });
+  
+  // Configure permission check handler
+  session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+    const allowedPermissions = ['microphone', 'camera', 'notifications', 'media'];
+    return allowedPermissions.includes(permission);
   });
   
   createWindow();
