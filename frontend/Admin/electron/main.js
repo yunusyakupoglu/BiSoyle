@@ -55,13 +55,20 @@ function createWindow() {
   });
 }
 
+// Permissions should be set before app.whenReady()
+app.commandLine.appendSwitch('enable-speech-dispatcher');
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
 app.whenReady().then(() => {
   // Configure permissions - automatically grant microphone, camera, notifications
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    console.log(`Permission requested: ${permission}`);
     const allowedPermissions = ['microphone', 'camera', 'notifications', 'media'];
     if (allowedPermissions.includes(permission)) {
+      console.log(`Permission granted: ${permission}`);
       callback(true);
     } else {
+      console.log(`Permission denied: ${permission}`);
       callback(false);
     }
   });
@@ -69,7 +76,9 @@ app.whenReady().then(() => {
   // Configure permission check handler
   session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
     const allowedPermissions = ['microphone', 'camera', 'notifications', 'media'];
-    return allowedPermissions.includes(permission);
+    const allowed = allowedPermissions.includes(permission);
+    console.log(`Permission check: ${permission} = ${allowed}`);
+    return allowed;
   });
   
   createWindow();
