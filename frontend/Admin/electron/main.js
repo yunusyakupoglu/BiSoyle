@@ -59,28 +59,31 @@ function createWindow() {
 app.commandLine.appendSwitch('enable-speech-dispatcher');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
-app.whenReady().then(() => {
+// Configure permissions BEFORE app.whenReady()
+app.on('session-created', (session) => {
   // Configure permissions - automatically grant microphone, camera, notifications
-  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-    console.log(`Permission requested: ${permission}`);
+  session.setPermissionRequestHandler((webContents, permission, callback) => {
+    console.log(`[Electron] Permission requested: ${permission}`);
     const allowedPermissions = ['microphone', 'camera', 'notifications', 'media'];
     if (allowedPermissions.includes(permission)) {
-      console.log(`Permission granted: ${permission}`);
+      console.log(`[Electron] Permission granted: ${permission}`);
       callback(true);
     } else {
-      console.log(`Permission denied: ${permission}`);
+      console.log(`[Electron] Permission denied: ${permission}`);
       callback(false);
     }
   });
   
   // Configure permission check handler
-  session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+  session.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
     const allowedPermissions = ['microphone', 'camera', 'notifications', 'media'];
     const allowed = allowedPermissions.includes(permission);
-    console.log(`Permission check: ${permission} = ${allowed}`);
+    console.log(`[Electron] Permission check: ${permission} = ${allowed}`);
     return allowed;
   });
-  
+});
+
+app.whenReady().then(() => {
   createWindow();
 
   app.on('activate', () => {
