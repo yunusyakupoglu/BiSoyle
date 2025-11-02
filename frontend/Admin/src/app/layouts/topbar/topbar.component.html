@@ -34,12 +34,37 @@
       </div>
 
       <div class="d-flex align-items-center gap-1">
+        <!-- Microphone Permission Status -->
+        @if (microphonePermission === 'prompt' || microphonePermission === null) {
+          <div class="topbar-item">
+            <button
+              type="button"
+              class="btn btn-warning btn-sm"
+              (click)="requestMicrophonePermission()"
+              title="Mikrofon izni iste"
+            >
+              <iconify-icon
+                icon="iconamoon:shield-warning-duotone"
+                class="fs-18 align-middle me-1"
+              ></iconify-icon>
+              Mikrofon İzni
+            </button>
+          </div>
+        }
+        
+        @if (microphonePermission === 'denied') {
+          <div class="topbar-item">
+            <span class="badge bg-danger">Mikrofon Reddedildi</span>
+          </div>
+        }
+        
         <!-- Voice Listener -->
         <div class="topbar-item">
           <button
             type="button"
             class="topbar-button"
             [class.active]="isListening"
+            [disabled]="microphonePermission === 'denied'"
             (click)="toggleListening()"
             [title]="isListening ? 'Dinlemeyi Durdur' : 'Dinlemeyi Başlat'"
           >

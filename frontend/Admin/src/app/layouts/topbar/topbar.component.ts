@@ -73,6 +73,9 @@ export class TopbarComponent implements OnInit, OnDestroy {
   private productCache: any[] = []
   private productCacheTime = 0
   private readonly PRODUCT_CACHE_TTL = 60000 // 1 dakika
+  
+  // Microphone permission
+  microphonePermission: PermissionState | null = null
 
   constructor(@Inject(DOCUMENT) private document: any) {}
   @Output() settingsButtonClicked = new EventEmitter()
@@ -80,6 +83,46 @@ export class TopbarComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.element = document.documentElement
+    this.checkMicrophonePermission()
+  }
+  
+  async checkMicrophonePermission(): Promise<void> {
+    try {
+      if (navigator.permissions) {
+        const result = await navigator.permissions.query({ name: 'microphone' as PermissionName })
+        this.microphonePermission = result.state
+        result.onchange = () => {
+          this.microphonePermission = result.state
+        }
+      }
+    } catch (err) {
+      console.log('Permission API not supported, using fallback')
+      // Fallback: try to get permission by requesting media
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        stream.getTracks().forEach(track => track.stop())
+        this.microphonePermission = 'granted'
+      } catch (e) {
+        this.microphonePermission = 'denied'
+      }
+    }
+  }
+  
+  async requestMicrophonePermission(): Promise<void> {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream.getTracks().forEach(track => track.stop())
+      this.microphonePermission = 'granted'
+      this.addVoiceNotification('Sistem', 'Mikrofon izni verildi')
+      // İzin verildikten sonra dinlemeyi başlat
+      if (!this.isListening) {
+        this.startListening()
+      }
+    } catch (err) {
+      this.microphonePermission = 'denied'
+      this.addVoiceNotification('Sistem', 'Mikrofon izni reddedildi')
+      console.error('Microphone permission denied:', err)
+    }
   }
 
   ngOnDestroy(): void {
