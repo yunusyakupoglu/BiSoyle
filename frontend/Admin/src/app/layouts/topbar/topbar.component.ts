@@ -133,6 +133,12 @@ export class TopbarComponent implements OnInit, OnDestroy {
 
       this.recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error)
+        
+        // Network hatası için bildirim göster
+        if (event.error === 'network') {
+          this.addVoiceNotification('Sistem', 'Mikrofon erişimi reddedildi! Lütfen izinleri kontrol edin.')
+        }
+        
         // Hata olsa bile tekrar başlat
         if (this.isListening && this.recognition && event.error !== 'no-speech') {
           setTimeout(() => {
