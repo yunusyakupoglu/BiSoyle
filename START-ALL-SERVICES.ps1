@@ -44,9 +44,15 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd c:\Users\Lenov
 
 Start-Sleep -Seconds 5
 
-# Frontend
-Write-Host "[10/10] Starting Frontend (Port 4200)..." -ForegroundColor Yellow
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd c:\Users\Lenovo\Desktop\BiSoyle\frontend\Admin; Write-Host 'FRONTEND ADMIN - Port 4200' -ForegroundColor Magenta; npm start"
+# Frontend Angular Dev Server
+Write-Host "[10/12] Starting Angular Dev Server (Port 4200)..." -ForegroundColor Yellow
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd c:\Users\Lenovo\Desktop\BiSoyle\frontend\Admin; Write-Host 'ANGULAR DEV SERVER - Port 4200' -ForegroundColor Magenta; npx ng serve"
+
+Start-Sleep -Seconds 10
+
+# Electron Desktop App
+Write-Host "[11/12] Starting Electron Desktop App..." -ForegroundColor Yellow
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd c:\Users\Lenovo\Desktop\BiSoyle\frontend\Admin; Write-Host 'ELECTRON DESKTOP APP' -ForegroundColor Green; Start-Sleep -Seconds 10; npx electron ."
 
 Write-Host ""
 Write-Host "=====================================" -ForegroundColor Cyan
@@ -63,6 +69,7 @@ Write-Host "  Product Svc   : http://localhost:5002" -ForegroundColor White
 Write-Host "  Transaction   : http://localhost:5003" -ForegroundColor White
 Write-Host "  Receipt Svc   : http://localhost:5001" -ForegroundColor White
 Write-Host "  Voice Service : http://localhost:8765" -ForegroundColor White
+Write-Host "  Angular Dev   : http://localhost:4200" -ForegroundColor White
 Write-Host ""
-Write-Host "Frontend: http://localhost:4200" -ForegroundColor Cyan
+Write-Host "Electron Desktop App: Başlatılıyor..." -ForegroundColor Green
 Write-Host ""
