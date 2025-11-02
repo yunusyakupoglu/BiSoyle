@@ -21,7 +21,7 @@ import { Store } from '@ngrx/store'
 import { SimplebarAngularModule } from 'simplebar-angular'
 import { getLayoutColor } from '../../store/layout/layout-selector'
 import { logout } from '@/app/store/authentication/authentication.actions'
-import { Router } from '@angular/router'
+import { Router, RouterModule } from '@angular/router'
 import { activityStreamData, appsData, notificationsData } from './data'
 import { AuthService } from '@/app/services/auth.service'
 import { TransactionRefreshService } from '@/app/services/transaction-refresh.service'
@@ -35,6 +35,7 @@ import { TransactionRefreshService } from '@/app/services/transaction-refresh.se
     NgbOffcanvasModule,
     CommonModule,
     NgbTooltipModule,
+    RouterModule,
   ],
   templateUrl: './topbar.component.html',
   schemas: [CUSTOM_ELEMENTS_SCHEMA],

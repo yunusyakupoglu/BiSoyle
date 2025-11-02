@@ -37,24 +37,25 @@
         <!-- Microphone Permission Status -->
         @if (microphonePermission === 'prompt' || microphonePermission === null) {
           <div class="topbar-item">
-            <button
-              type="button"
+            <a
+              routerLink="/izinler"
               class="btn btn-warning btn-sm"
-              (click)="requestMicrophonePermission()"
-              title="Mikrofon izni iste"
+              title="İzinler sayfasına git"
             >
               <iconify-icon
                 icon="iconamoon:shield-warning-duotone"
                 class="fs-18 align-middle me-1"
               ></iconify-icon>
               Mikrofon İzni
-            </button>
+            </a>
           </div>
         }
         
         @if (microphonePermission === 'denied') {
           <div class="topbar-item">
-            <span class="badge bg-danger">Mikrofon Reddedildi</span>
+            <a routerLink="/izinler" title="İzinler sayfasına git">
+              <span class="badge bg-danger">Mikrofon Reddedildi</span>
+            </a>
           </div>
         }
         
