@@ -8,8 +8,27 @@ using BiSoyle.Receipt.Service.Data;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using System.Runtime.InteropServices;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Helper function to get Desktop path
+string GetDesktopPath()
+{
+    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+    {
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Desktop", "BiSoyleFisler");
+    }
+    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+    {
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Desktop", "BiSoyleFisler");
+    }
+    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+    {
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Desktop", "BiSoyleFisler");
+    }
+    return Path.Combine(Directory.GetCurrentDirectory(), "BiSoyleFisler");
+}
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -118,7 +137,16 @@ app.MapPost("/api/receipt/print", async (HttpContext context, IHubContext<Receip
     }
     
     receipt.ToplamTutar = toplam_tutar;
-    var pdf_path = $"data/receipts/receipt_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+    
+    // Desktop klasörü oluştur
+    var desktopPath = GetDesktopPath();
+    if (!Directory.Exists(desktopPath))
+    {
+        Directory.CreateDirectory(desktopPath);
+    }
+    
+    var pdf_filename = $"Fis_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+    var pdf_path = Path.Combine(desktopPath, pdf_filename);
     receipt.PdfPath = pdf_path;
     
     // Save to database
@@ -190,8 +218,9 @@ app.MapPost("/api/receipt/print", async (HttpContext context, IHubContext<Receip
             {
                 container.Page(page =>
                 {
-                    page.Size(PageSizes.A4);
-                    page.Margin(2f, Unit.Centimetre);
+                    // Thermal printer boyutu (80mm width - 226.77 points width)
+                    page.Size(226.77f, 297); // 80mm x A4 height
+                    page.Margin(0.5f, Unit.Centimetre);
                     
                     page.Content().Column(column =>
                     {

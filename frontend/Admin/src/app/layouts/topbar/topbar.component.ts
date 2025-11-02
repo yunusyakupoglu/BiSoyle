@@ -515,6 +515,9 @@ export class TopbarComponent implements OnInit, OnDestroy {
         // Notification: Başarılı
         this.addVoiceNotification('Sistem', `Fiş oluşturuldu: ${islemKodu} (${toplamTutar} TL)`)
         
+        // Notification: PDF kaydedildi
+        this.addVoiceNotification('Sistem', 'Fiş PDF olarak masaüstüne kaydedildi')
+        
         // İşlemler listesini yenile
         this.transactionRefreshService.triggerRefresh()
         this.addVoiceNotification('Sistem', 'İşlemler listesi yenilendi')
