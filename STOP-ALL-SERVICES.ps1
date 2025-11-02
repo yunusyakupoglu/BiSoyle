@@ -17,13 +17,12 @@ Get-Process -Name "dotnet" -ErrorAction SilentlyContinue | Stop-Process -Force
 Write-Host "Stopping Python services..." -ForegroundColor Yellow
 Get-Process -Name "python" -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "*voice-service*" } | Stop-Process -Force
 
-# Stop Node.js processes (Angular dev server, Electron)
-Write-Host "Stopping Node.js processes (Angular, Electron)..." -ForegroundColor Yellow
+# Stop Node.js processes (Angular dev server)
+Write-Host "Stopping Node.js processes (Angular)..." -ForegroundColor Yellow
 Get-Process -Name "node" -ErrorAction SilentlyContinue | Stop-Process -Force
 
-# Stop Electron processes
-Write-Host "Stopping Electron processes..." -ForegroundColor Yellow
-Get-Process -Name "electron" -ErrorAction SilentlyContinue | Stop-Process -Force
+# Stop .NET service processes
+Write-Host "Stopping .NET service processes..." -ForegroundColor Yellow
 Get-Process -Name "BiSoyle.Receipt.Service" -ErrorAction SilentlyContinue | Stop-Process -Force
 Get-Process -Name "BiSoyle.Transaction.Service" -ErrorAction SilentlyContinue | Stop-Process -Force
 Get-Process -Name "BiSoyle.Product.Service" -ErrorAction SilentlyContinue | Stop-Process -Force
