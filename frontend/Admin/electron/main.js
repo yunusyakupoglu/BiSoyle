@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, session } = require('electron');
 const path = require('path');
 const url = require('url');
 
@@ -55,6 +55,12 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Configure microphone permissions
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    const allowedPermissions = ['microphone', 'camera', 'notifications'];
+    callback(allowedPermissions.includes(permission));
+  });
+  
   createWindow();
 
   app.on('activate', () => {
