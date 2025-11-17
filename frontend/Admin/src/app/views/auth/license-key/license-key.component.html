@@ -1,0 +1,83 @@
+<div class="row justify-content-center">
+  <div class="col-xl-12">
+    <div class="card auth-card">
+      <div class="card-body p-0">
+        <div class="row align-items-center g-0">
+          <div class="col-lg-6 d-none d-lg-inline-block border-end">
+            <div class="auth-page-sidebar d-flex align-items-center justify-content-center" style="padding: 2.5rem;">
+              <img 
+                src="assets/images/debakiim-logo.png" 
+                width="380" 
+                height="380"
+                alt="De' Bakiim Logo"
+                style="object-fit: contain;"
+              />
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="p-4">
+              <h2 class="fw-bold text-center fs-18 mb-2">Lisans Anahtarı</h2>
+              <p class="text-muted text-center mt-0 mb-3">
+                Sisteme erişebilmek için lisans anahtarınızı girin.
+              </p>
+
+              <div *ngIf="hataMesaji" class="alert alert-danger" role="alert">
+                {{ hataMesaji }}
+              </div>
+
+              <div class="row justify-content-center">
+                <div class="col-12 col-md-8">
+                  <form class="authentication-form">
+                    <div class="mb-3">
+                      <label class="form-label">Lisans Anahtarı</label>
+                      <input
+                        type="text"
+                        [(ngModel)]="licenseKey"
+                        (input)="formatLicenseKey($event)"
+                        name="licenseKey"
+                        class="form-control text-uppercase text-center"
+                        placeholder="XXXX-XXXX-XXXX-XXXX"
+                        maxlength="19"
+                        style="letter-spacing: 2px; font-size: 16px; font-weight: 600;"
+                      />
+                      <small class="text-muted d-block mt-2 text-center">
+                        Format: XXXX-XXXX-XXXX-XXXX
+                      </small>
+                    </div>
+
+                    <div class="mb-1 text-center d-grid">
+                      <button 
+                        class="btn btn-primary" 
+                        type="button"
+                        (click)="validateLicense()"
+                        [disabled]="yukleniyor">
+                        <span *ngIf="!yukleniyor">Lisans Anahtarını Doğrula</span>
+                        <span *ngIf="yukleniyor">
+                          <span class="spinner-border spinner-border-sm me-1"></span>
+                          Doğrulanıyor...
+                        </span>
+                      </button>
+                    </div>
+                    
+                    <div class="mt-3 text-center">
+                      <small class="text-muted">
+                        Lisans anahtarınızı aldıktan sonra giriş yapabilirsiniz.
+                      </small>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+

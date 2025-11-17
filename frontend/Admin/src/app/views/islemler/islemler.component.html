@@ -24,7 +24,17 @@
         <div class="card-body">
           <form (ngSubmit)="islemEkle()">
             <div class="row mb-3">
-              <div class="col-md-4">
+              <div class="col-md-3">
+                <label class="form-label">İşlem Tipi</label>
+                <select 
+                  class="form-select" 
+                  [(ngModel)]="islemTipi" 
+                  name="islemTipi">
+                  <option value="SATIS">Satış</option>
+                  <option value="ALIS">Alış</option>
+                </select>
+              </div>
+              <div class="col-md-3">
                 <label class="form-label">İşlem Kodu</label>
                 <input 
                   type="text" 
@@ -33,7 +43,7 @@
                   name="islemKodu"
                   placeholder="Otomatik oluşturulacak">
               </div>
-              <div class="col-md-4">
+              <div class="col-md-3">
                 <label class="form-label">Toplam Tutar</label>
                 <input 
                   type="text" 
@@ -51,6 +61,7 @@
                     <th>Ürün</th>
                     <th>Miktar</th>
                     <th>Birim Fiyat</th>
+                    <th>Toplam Tutar</th>
                     <th>İşlem</th>
                   </tr>
                 </thead>
@@ -62,8 +73,8 @@
                         [(ngModel)]="item.urun_id" 
                         [name]="'urun_' + i"
                         (ngModelChange)="onUrunSelected(i, $event)">
-                        <option [value]="0">Ürün Seçin</option>
-                        <option *ngFor="let urun of urunler" [value]="urun.id">
+                        <option [ngValue]="0">Ürün Seçin</option>
+                        <option *ngFor="let urun of urunler" [ngValue]="urun.id">
                           {{ urun.urunAdi || urun.urun_adi }}
                         </option>
                       </select>
@@ -82,9 +93,12 @@
                       <input 
                         type="number" 
                         class="form-control" 
-                        [(ngModel)]="item.birim_fiyat" 
+                        [(ngModel)]="item.birim_fiyat"
                         [name]="'birim_fiyat_' + i"
                         readonly>
+                    </td>
+                    <td class="text-end align-middle">
+                      {{ ((item.birim_fiyat || 0) * (item.miktar || 0)).toFixed(2) }}
                     </td>
                     <td>
                       <button 
@@ -96,7 +110,7 @@
                     </td>
                   </tr>
                   <tr *ngIf="seciliUrunler.length === 0">
-                    <td colspan="4" class="text-center">
+                    <td colspan="5" class="text-center">
                       <button type="button" class="btn btn-primary" (click)="urunEkle()">
                         <i class="mdi mdi-plus"></i> Ürün Ekle
                       </button>

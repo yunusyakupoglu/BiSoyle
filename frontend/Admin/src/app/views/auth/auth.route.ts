@@ -9,6 +9,7 @@ import { LockScreenComponent } from './lock-screen/lock-screen.component'
 import { LockScreen2Component } from './lock-screen2/lock-screen2.component'
 import { LoginComponent } from './login/login.component'
 import { RegisterComponent } from './register/register.component'
+import { LicenseKeyComponent } from './license-key/license-key.component'
 
 export const AUTH_ROUTES: Route[] = [
   {
@@ -66,4 +67,9 @@ export const AUTH_ROUTES: Route[] = [
     component: LockScreen2Component,
     data: { title: 'Lock Screen 2' },
   },
+      {
+        path: 'license-key',
+        component: LicenseKeyComponent,
+        data: { title: 'License Key' },
+      },
 ]

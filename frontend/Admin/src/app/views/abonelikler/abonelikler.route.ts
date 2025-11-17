@@ -12,3 +12,26 @@ export const ABONELIKLER_ROUTES: Route[] = [
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

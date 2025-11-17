@@ -1,0 +1,292 @@
+<div class="container-xxl">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h4 class="card-title mb-1">Görev Yönetimi</h4>
+            <p class="text-muted mb-0">Jira tarzı görev takip sistemi</p>
+          </div>
+          @if (isAdmin) {
+            <button class="btn btn-primary" (click)="openCreateModal()">
+              <i class="mdi mdi-plus"></i> Yeni Görev Ekle
+            </button>
+          }
+        </div>
+        <div class="card-body">
+          @if (loading) {
+            <div class="text-center py-5">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Yükleniyor...</span>
+              </div>
+            </div>
+          } @else if (error) {
+            <div class="alert alert-danger">{{ error }}</div>
+          } @else {
+            <!-- Kanban Board -->
+            <div class="row g-3">
+              @for (column of statusColumns; track column.key) {
+                <div class="col-lg-3 col-md-6">
+                  <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-{{ column.color }} text-white">
+                      <h6 class="mb-0">
+                        {{ column.label }}
+                        <span class="badge bg-light text-dark ms-2">{{ getTasksByStatus(column.key).length }}</span>
+                      </h6>
+                    </div>
+                    <div class="card-body p-2" style="min-height: 400px; max-height: 600px; overflow-y: auto;">
+                      @for (task of getTasksByStatus(column.key); track task.id) {
+                        <div class="card mb-2 task-card" [class.border-danger]="task.priority === 'Critical'">
+                          <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                              <h6 class="mb-0 text-truncate" style="max-width: 200px;" title="{{ task.title }}">
+                                {{ task.title }}
+                              </h6>
+                              <div class="dropdown">
+                                <button class="btn btn-sm btn-link text-muted p-0" type="button" data-bs-toggle="dropdown">
+                                  <i class="mdi mdi-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                  <li>
+                                    <a class="dropdown-item" (click)="openCommentModal(task)">
+                                      <i class="mdi mdi-comment-outline me-2"></i> Yorumlar
+                                    </a>
+                                  </li>
+                                  @if (canEditTask(task)) {
+                                    <li>
+                                      <a class="dropdown-item" (click)="openEditModal(task)">
+                                        <i class="mdi mdi-pencil me-2"></i> Düzenle
+                                      </a>
+                                    </li>
+                                  }
+                                  @if (canDeleteTask(task)) {
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                      <a class="dropdown-item text-danger" (click)="deleteTask(task)">
+                                        <i class="mdi mdi-delete me-2"></i> Sil
+                                      </a>
+                                    </li>
+                                  }
+                                </ul>
+                              </div>
+                            </div>
+                            
+                            @if (task.description) {
+                              <p class="text-muted small mb-2" style="font-size: 0.85rem;">
+                                {{ task.description.length > 100 ? (task.description.substring(0, 100) + '...') : task.description }}
+                              </p>
+                            }
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                              <span class="badge {{ priorityColors[task.priority] || 'bg-secondary' }}">
+                                {{ task.priority }}
+                              </span>
+                              @if (task.dueDate) {
+                                <small class="text-muted">
+                                  <i class="mdi mdi-calendar"></i>
+                                  {{ task.dueDate | date:'dd.MM.yyyy' }}
+                                </small>
+                              }
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                              <small class="text-muted">
+                                <i class="mdi mdi-account"></i>
+                                @if (isUser) {
+                                  {{ getUserName(task.createdByUserId) }}
+                                } @else {
+                                  {{ getUserName(task.assignedToUserId) }}
+                                }
+                              </small>
+                              @if (task.comments && task.comments.length > 0) {
+                                <small class="text-muted">
+                                  <i class="mdi mdi-comment"></i> {{ task.comments.length }}
+                                </small>
+                              }
+                            </div>
+                            
+                            <!-- Status Actions (for assigned user) -->
+                            @if (task.assignedToUserId === currentUser?.id) {
+                              <div class="mt-2 pt-2 border-top">
+                                <div class="btn-group btn-group-sm w-100" role="group">
+                                  @if (task.status === 'Pending') {
+                                    <button class="btn btn-outline-info btn-sm" (click)="updateTaskStatus(task, 'Accepted')" title="Kabul Et">
+                                      <i class="mdi mdi-check"></i>
+                                    </button>
+                                  }
+                                  @if (task.status === 'Accepted') {
+                                    <button class="btn btn-outline-warning btn-sm" (click)="updateTaskStatus(task, 'InProgress')" title="Başlat">
+                                      <i class="mdi mdi-play"></i>
+                                    </button>
+                                  }
+                                  @if (task.status === 'InProgress') {
+                                    <button class="btn btn-outline-success btn-sm" (click)="updateTaskStatus(task, 'Completed')" title="Tamamla">
+                                      <i class="mdi mdi-check-circle"></i>
+                                    </button>
+                                  }
+                                </div>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
+                      @if (getTasksByStatus(column.key).length === 0) {
+                        <div class="text-center text-muted py-4">
+                          <i class="mdi mdi-inbox-outline fs-1"></i>
+                          <p class="mb-0 mt-2">Görev yok</p>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create/Edit Task Modal -->
+<div class="modal fade" tabindex="-1" [class.show]="showTaskModal" [style.display]="showTaskModal ? 'block' : 'none'">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ editingTask ? 'Görev Düzenle' : 'Yeni Görev Ekle' }}</h5>
+        <button type="button" class="btn-close" (click)="closeTaskModal()"></button>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="mb-3">
+            <label class="form-label">Başlık <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [(ngModel)]="formData.title" name="title" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Açıklama</label>
+            <textarea class="form-control" [(ngModel)]="formData.description" name="description" rows="4"></textarea>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Atanan Kullanıcı <span class="text-danger">*</span></label>
+              <select class="form-select" [(ngModel)]="formData.assignedToUserId" name="assignedToUserId" required>
+                <option [ngValue]="null">Kullanıcı Seçin</option>
+                @for (user of users; track user.id) {
+                  <option [ngValue]="user.id">{{ getUserName(user.id) }}</option>
+                }
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Öncelik</label>
+              <select class="form-select" [(ngModel)]="formData.priority" name="priority">
+                <option value="Low">Düşük</option>
+                <option value="Medium">Orta</option>
+                <option value="High">Yüksek</option>
+                <option value="Critical">Kritik</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Bitiş Tarihi</label>
+            <input type="date" class="form-control" [(ngModel)]="formData.dueDate" name="dueDate">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeTaskModal()">İptal</button>
+        <button type="button" class="btn btn-primary" (click)="saveTask()" [disabled]="saving">
+          @if (saving) {
+            <span class="spinner-border spinner-border-sm me-1"></span>
+          }
+          {{ editingTask ? 'Güncelle' : 'Kaydet' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Comments Modal -->
+<div class="modal fade" tabindex="-1" [class.show]="showCommentModal" [style.display]="showCommentModal ? 'block' : 'none'">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          @if (selectedTaskForComment) {
+            Yorumlar - {{ selectedTaskForComment.title }}
+          }
+        </h5>
+        <button type="button" class="btn-close" (click)="closeCommentModal()"></button>
+      </div>
+      <div class="modal-body">
+        @if (selectedTaskForComment) {
+          <!-- Add Comment -->
+          <div class="mb-4">
+            <label class="form-label">Yeni Yorum Ekle</label>
+            <div class="input-group">
+              <textarea class="form-control" [(ngModel)]="commentText" rows="3" placeholder="Yorumunuzu yazın..."></textarea>
+              <button class="btn btn-primary" type="button" (click)="addComment()">
+                <i class="mdi mdi-send"></i> Gönder
+              </button>
+            </div>
+          </div>
+          
+          <!-- Comments List -->
+          <div class="comments-list">
+            @if (selectedTaskForComment.comments && selectedTaskForComment.comments.length > 0) {
+              @for (comment of selectedTaskForComment.comments; track comment.id) {
+                <div class="card mb-2">
+                  <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div class="flex-grow-1">
+                        <div class="d-flex align-items-center mb-2">
+                          <strong>{{ getUserName(comment.userId) }}</strong>
+                          <small class="text-muted ms-2">{{ comment.createdDate | date:'dd.MM.yyyy HH:mm' }}</small>
+                        </div>
+                        <p class="mb-0">{{ comment.comment }}</p>
+                      </div>
+                      @if (comment.userId === currentUser?.id) {
+                        <button class="btn btn-sm btn-link text-danger" (click)="deleteComment(comment.id)" title="Sil">
+                          <i class="mdi mdi-delete"></i>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            } @else {
+              <div class="text-center text-muted py-4">
+                <i class="mdi mdi-comment-outline fs-1"></i>
+                <p class="mb-0 mt-2">Henüz yorum yok</p>
+              </div>
+            }
+          </div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeCommentModal()">Kapat</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@if (showTaskModal || showCommentModal) {
+  <div class="modal-backdrop fade show"></div>
+}
+
+<style>
+  .task-card {
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+  }
+  
+  .comments-list {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+</style>
+

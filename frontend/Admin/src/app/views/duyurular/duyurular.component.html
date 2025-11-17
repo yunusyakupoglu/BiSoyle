@@ -1,0 +1,141 @@
+<div class="container-xxl">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h4 class="card-title mb-1">Duyurular</h4>
+            <p class="text-muted mb-0">
+              <ng-container *ngIf="isSuperAdmin">
+                Sistem duyurularını yönetin
+              </ng-container>
+              <ng-container *ngIf="!isSuperAdmin">
+                Size ulaşan duyuruları görüntüleyin
+              </ng-container>
+            </p>
+          </div>
+          <button *ngIf="isSuperAdmin" class="btn btn-primary" (click)="openCreateModal()">
+            <i class="mdi mdi-plus"></i> Yeni Duyuru Ekle
+          </button>
+        </div>
+        <div class="card-body">
+          <div *ngIf="loading" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Yükleniyor...</span>
+            </div>
+          </div>
+          <div *ngIf="!loading && error" class="alert alert-danger">{{ error }}</div>
+          <ng-container *ngIf="!loading && !error">
+            <div *ngIf="announcements.length === 0" class="text-center py-5">
+              <i class="mdi mdi-bullhorn fs-1 text-muted"></i>
+              <p class="text-muted mt-2 mb-3">Henüz duyuru bulunmuyor.</p>
+              <button *ngIf="isSuperAdmin" class="btn btn-primary" (click)="openCreateModal()">
+                <i class="mdi mdi-plus"></i> İlk Duyuruyu Ekle
+              </button>
+            </div>
+            <div *ngIf="announcements.length > 0" class="row g-3">
+              <div *ngFor="let announcement of announcements; trackBy: trackByAnnouncementId" class="col-12">
+                <div class="card border-0 shadow-sm" [class.border-danger]="announcement.priority === 'Kritik'">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                          <h5 class="mb-0">{{ announcement.title }}</h5>
+                          <span class="badge {{ priorityColors[announcement.priority] || 'bg-secondary' }}">
+                            {{ announcement.priority }}
+                          </span>
+                          <span *ngIf="!announcement.isActive" class="badge bg-secondary">Pasif</span>
+                        </div>
+                        <small *ngIf="isSuperAdmin" class="text-muted">
+                          <i class="mdi mdi-office-building"></i>
+                          {{ getTenantName(announcement.tenantId) }}
+                        </small>
+                      </div>
+                      <div *ngIf="isSuperAdmin" class="btn-group" role="group">
+                        <button class="btn btn-sm btn-light" (click)="openEditModal(announcement)" title="Düzenle">
+                          <i class="mdi mdi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-warning" (click)="toggleActive(announcement)" [title]="announcement.isActive ? 'Pasif Yap' : 'Aktif Yap'">
+                          <i class="mdi" [class.mdi-eye-off]="announcement.isActive" [class.mdi-eye]="!announcement.isActive"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" (click)="deleteAnnouncement(announcement)" title="Sil">
+                          <i class="mdi mdi-delete"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <p class="mb-2">{{ announcement.message }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                      <small class="text-muted">
+                        <i class="mdi mdi-calendar"></i>
+                        {{ announcement.createdDate | date:'dd.MM.yyyy HH:mm' }}
+                        <span *ngIf="announcement.expiryDate" class="ms-2">
+                          - Bitiş: {{ announcement.expiryDate | date:'dd.MM.yyyy' }}
+                        </span>
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create/Edit Modal (SuperAdmin only) -->
+<div *ngIf="isSuperAdmin" class="modal fade" tabindex="-1" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ editingAnnouncement ? 'Duyuru Düzenle' : 'Yeni Duyuru Ekle' }}</h5>
+        <button type="button" class="btn-close" (click)="closeModal()"></button>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="mb-3">
+            <label class="form-label">Başlık <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [(ngModel)]="formData.title" name="title" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Mesaj <span class="text-danger">*</span></label>
+            <textarea class="form-control" [(ngModel)]="formData.message" name="message" rows="5" required></textarea>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Hedef Firma</label>
+              <select class="form-select" [(ngModel)]="formData.tenantId" name="tenantId">
+                <option [ngValue]="null">Tüm Firmalar</option>
+                <option *ngFor="let tenant of tenants; trackBy: trackByTenantId" [ngValue]="tenant.id">{{ tenant.firmaAdi }}</option>
+              </select>
+              <small class="text-muted">Boş bırakılırsa tüm firmalara gönderilir</small>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Öncelik</label>
+              <select class="form-select" [(ngModel)]="formData.priority" name="priority">
+                <option value="Normal">Normal</option>
+                <option value="Yüksek">Yüksek</option>
+                <option value="Kritik">Kritik</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Bitiş Tarihi (Opsiyonel)</label>
+            <input type="date" class="form-control" [(ngModel)]="formData.expiryDate" name="expiryDate">
+            <small class="text-muted">Belirtilirse, bu tarihten sonra duyuru otomatik olarak pasif olur</small>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">İptal</button>
+        <button type="button" class="btn btn-primary" (click)="saveAnnouncement()" [disabled]="saving">
+          <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+          {{ editingAnnouncement ? 'Güncelle' : 'Kaydet' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="isSuperAdmin && showModal" class="modal-backdrop fade show"></div>

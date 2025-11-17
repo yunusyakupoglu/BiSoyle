@@ -22,7 +22,8 @@ public class UserDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.TenantId).IsRequired(false); // NULL = SuperAdmin
             entity.HasIndex(e => new { e.TenantId, e.Username }); // Composite index
-            entity.HasIndex(e => new { e.TenantId, e.Email }); // Composite index
+            entity.HasIndex(e => new { e.TenantId, e.Email }); // Composite index (query perf)
+            entity.HasIndex(e => e.Email).IsUnique(); // E-posta benzersiz (global)
             entity.Property(e => e.Username).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Email).IsRequired().HasMaxLength(200);
             entity.Property(e => e.PasswordHash).IsRequired();

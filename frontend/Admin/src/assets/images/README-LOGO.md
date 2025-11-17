@@ -52,3 +52,26 @@ Logo dosyasını ekledikten sonra:
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

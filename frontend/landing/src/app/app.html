@@ -1,0 +1,500 @@
+<div class="page-wrapper">
+  <div class="decor decor-1"></div>
+  <div class="decor decor-2"></div>
+  <div class="decor decor-3"></div>
+
+  <header class="page-header">
+    <div class="brand">
+      <img src="assets/images/bisoyle-logo.png" alt="De'Bakiim Logo">
+      <div>
+        <span class="brand-title">De'Bakiim</span>
+        <span class="brand-tagline">Sesli Sipariş &amp; Abonelik Platformu</span>
+      </div>
+    </div>
+    <nav class="header-actions">
+      <a class="header-link" href="#plans">Planlar</a>
+      <a class="header-link" href="#features">Özellikler</a>
+      <a class="cta-button" href="#plans">Hemen Başla</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-content">
+        <p class="pill">Yeni Kuşak Sesli Satış Platformu</p>
+        <h1>De'Bakiim ile aboneliğinizi dakikalar içinde başlatın</h1>
+        <p class="hero-lead">
+          De'Bakiim; çok kanallı sesli sipariş, lisans yönetimi ve cihaz aktivasyonu için uçtan uca
+          çözümler sunar. Landing sayfamız üzerinden aboneliğinizi satın alın, firmanızı oluşturun
+          ve lisans anahtarınızı anında teslim alın.
+        </p>
+        <div class="hero-cta">
+          <a class="primary-button" href="#plans">
+            <i>🚀</i> Planları İncele
+          </a>
+          <button class="secondary-button" type="button" (click)="goBack(1)">
+            <i>🎬</i> Demo Önizlemesini Gör
+          </button>
+        </div>
+        <div class="hero-meta">
+          <div>
+            <strong>%99.9</strong>
+            <span>SLA garantisi</span>
+          </div>
+          <div>
+            <strong>+250</strong>
+            <span>Aktif bayi</span>
+          </div>
+          <div>
+            <strong>7/24</strong>
+            <span>Destek merkezi</span>
+          </div>
+        </div>
+        <div class="hero-metrics">
+          <div class="metric-card">
+            <span class="metric-icon">🔐</span>
+            <div>
+              <strong>Birlikte Gelen Lisans</strong>
+              <p>Her abonelikte cihaz lisansları otomatik hazırlanır.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <span class="metric-icon">🤖</span>
+            <div>
+              <strong>Yapay Zekâ Destekli</strong>
+              <p>Ses tanıma motoru ile hızlı ve hatasız sipariş.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <span class="metric-icon">📈</span>
+            <div>
+              <strong>Canlı Analitik</strong>
+              <p>Gerçek zamanlı raporlar ve cihaz aktivasyon takibi.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="hero-visual-glow"></div>
+        <img src="assets/images/photo.png" alt="De'Bakiim ana ekran ön izlemesi">
+      </div>
+    </section>
+
+    <section class="features" id="features">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Neden De'Bakiim?</h2>
+          <p class="section-subtitle">Tek platformla hem abonelik satın alın hem de operasyonlarınızı dakikalar içinde ayağa kaldırın.</p>
+        </div>
+      </div>
+      <div class="features-grid">
+        <article class="feature-card">
+          <span class="feature-icon">⚡</span>
+          <h3>Anında Aktivasyon</h3>
+          <p>Ödeme sonrası firma kaydı, lisans anahtarı ve admin kullanıcı otomatik oluşturulur.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon">🌐</span>
+          <h3>Çoklu Kanal Desteği</h3>
+          <p>Sesli, mobil ve kiosk siparişler tek panelden yönetilir, cihaz kotaları planınıza göre tanımlanır.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon">🧠</span>
+          <h3>Akıllı Kontroller</h3>
+          <p>Lisans muhafızları, cihaz parmak izi eşleştirme ve tolerans yönetimiyle güvenli kurulum.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon">🤝</span>
+          <h3>Paydaş Odaklı</h3>
+          <p>Bayiler, işletmeler ve çalışanlar için özelleştirilmiş arayüzler, rol bazlı yetkilendirme.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="progress-section" aria-label="Kayıt adımları">
+      <h2 class="section-title">Adım adım abonelik akışı</h2>
+      <div class="steps">
+        @for (step of steps; track step.id) {
+          <div class="step" [class.active]="currentStep() === step.id" [class.completed]="currentStep() > step.id">
+            <span class="step-index">{{ step.id }}</span>
+            <div class="step-body">
+              <span class="step-title">{{ step.title }}</span>
+              <span class="step-description">{{ step.description }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section id="plans" class="card-section" aria-label="Abonelik planları">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Planınızı seçin</h2>
+          <p class="section-subtitle">Sektörünüz ve ekip büyüklüğünüz ne olursa olsun, De'Bakiim ile dakikalar içinde aktif olun.</p>
+        </div>
+        <button class="link-button" type="button" (click)="resetFlow(true)" *ngIf="selectedPlan()">Plan seçimini sıfırla</button>
+      </div>
+
+      @if (plansLoading()) {
+        <div class="skeleton-grid">
+          @for (index of [0,1,2]; track index) {
+            <div class="skeleton-card"></div>
+          }
+        </div>
+      } @else if (plansError()) {
+        <div class="error-state">
+          <strong>Planlar yüklenemedi.</strong>
+          <p>{{ plansError() }}</p>
+          <button class="secondary-button" type="button" (click)="loadPlans()">Tekrar dene</button>
+        </div>
+      } @else if (!licensesAvailable()) {
+        <div class="empty-state">
+          <strong>Şu an satışa açık plan bulunmuyor.</strong>
+          <p>Lütfen kısa süre sonra tekrar kontrol edin veya destek ekibimizle iletişime geçin.</p>
+        </div>
+      } @else {
+        <div class="plan-grid">
+          @for (plan of plans(); track plan.id) {
+            <article class="plan-card" [class.selected]="selectedPlan()?.id === plan.id">
+              <header>
+                <div class="plan-heading">
+                  <h3>{{ plan.planAdi }}</h3>
+                  <span class="plan-price">{{ formatPrice(plan.aylikUcret) }} <small>/ ay</small></span>
+                </div>
+                <p class="plan-meta">
+                  {{ plan.maxKullaniciSayisi }} kullanıcı • {{ plan.maxBayiSayisi }} cihaz lisansı
+                </p>
+              </header>
+              <ul class="plan-features">
+                <li>Tenant başına özel lisans anahtarı</li>
+                <li>Gerçek zamanlı cihaz aktivasyon takibi</li>
+                <li>Ses tanıma modülü entegrasyonu</li>
+                <li>Rol bazlı yetkilendirme</li>
+              </ul>
+              <button class="primary-button" type="button" (click)="selectPlan(plan)">
+                @if (selectedPlan()?.id === plan.id) {
+                  <span>Bu plan seçildi</span>
+                } @else {
+                  <span>Planı seç</span>
+                }
+              </button>
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    @if (currentStep() >= 2) {
+      <section class="card-section" id="company" aria-label="Firma bilgileri">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Firma bilgilerinizi girin</h2>
+            <p class="section-subtitle">Bu bilgiler De'Bakiim üzerinde tenant kaydı oluşturmak için kullanılacaktır.</p>
+          </div>
+          @if (currentStep() > 2) {
+            <button class="link-button" type="button" (click)="goBack(2)">Bilgileri düzenle</button>
+          }
+        </div>
+
+        <form [formGroup]="companyForm" class="form-grid" (ngSubmit)="submitCompanyForm()">
+          <div class="form-field">
+            <label for="firmaAdi">Firma Adı *</label>
+            <input id="firmaAdi" type="text" formControlName="firmaAdi" placeholder="Örn. Hosteagle Teknoloji">
+            <small class="error" *ngIf="companyForm.get('firmaAdi')?.invalid && companyForm.get('firmaAdi')?.touched">
+              Firma adı en az 3 karakter olmalı.
+            </small>
+          </div>
+          <div class="form-field">
+            <label for="email">E-posta *</label>
+            <input id="email" type="email" formControlName="email" placeholder="info@firma.com">
+            <small class="error" *ngIf="companyForm.get('email')?.invalid && companyForm.get('email')?.touched">
+              Geçerli bir e-posta adresi girin.
+            </small>
+          </div>
+          <div class="form-field">
+            <label for="telefon">Telefon</label>
+            <input id="telefon" type="tel" formControlName="telefon" placeholder="0 212 000 00 00">
+          </div>
+          <div class="form-field">
+            <label for="vergiNo">Vergi Numarası</label>
+            <input id="vergiNo" type="text" formControlName="vergiNo" placeholder="1234567890">
+          </div>
+          <div class="form-field form-field--full">
+            <label for="adres">Adres</label>
+            <textarea id="adres" rows="3" formControlName="adres" placeholder="Vergi dairesi, adres ve diğer bilgiler"></textarea>
+          </div>
+
+          @if (createTenantError()) {
+            <div class="alert alert-error form-field--full">
+              {{ createTenantError() }}
+            </div>
+          }
+
+          <div class="form-actions">
+            <button class="secondary-button" type="button" (click)="goBack(1)">Geri dön</button>
+            <button class="primary-button" type="submit" [disabled]="createTenantLoading()">
+              @if (createTenantLoading()) {
+                <span class="spinner"></span>
+                İşleniyor...
+              } @else {
+                <span>Kaydet ve ödeme adımına geç</span>
+              }
+            </button>
+          </div>
+        </form>
+      </section>
+    }
+
+    @if (currentStep() >= 3) {
+      <section class="card-section" id="payment" aria-label="Ödeme">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Ödeme bilgileri</h2>
+            <p class="section-subtitle">
+              Sanal POS altyapımız üzerinden kartınızı güvenle kullanabilirsiniz. Tutar, plan seçiminize göre hesaplanır.
+            </p>
+          </div>
+          <button class="link-button" type="button" (click)="goBack(2)">Firma bilgilerine dön</button>
+        </div>
+
+        <div class="payment-summary">
+          <div>
+            <span class="summary-label">Seçilen plan</span>
+            <strong>{{ selectedPlan()?.planAdi }}</strong>
+          </div>
+          <div>
+            <span class="summary-label">Tutar</span>
+            <strong>{{ formatPrice(selectedPlan()?.aylikUcret ?? 0) }}</strong>
+          </div>
+          <div>
+            <span class="summary-label">Desteklenen bankalar</span>
+            <span class="summary-detail">
+              @if (bankList().length) {
+                {{ bankList().join(', ') }}
+              } @else {
+                Tüm yerel bankalar
+              }
+            </span>
+          </div>
+          <div class="payment-accepted-cards">
+            <span class="summary-label">Kabul Edilen Kartlar</span>
+            <div class="card-logos">
+              <img src="assets/images/visa-logo.svg" alt="Visa" class="card-logo" onerror="this.style.display='none'">
+              <img src="assets/images/mastercard-logo.svg" alt="MasterCard" class="card-logo" onerror="this.style.display='none'">
+            </div>
+          </div>
+          <div class="payment-gateway">
+            <span class="summary-label">Ödeme Altyapısı</span>
+            <div class="iyzico-badge">
+              <img src="assets/images/iyzico-logo.svg" alt="iyzico ile Öde" class="iyzico-badge-img" onerror="this.style.display='none'">
+            </div>
+          </div>
+          @if (paymentSettings()) {
+            <div>
+              <span class="summary-label">Ödeme IBAN</span>
+              <span class="summary-detail">
+                <strong>{{ paymentSettings()?.iban }}</strong>
+                @if (paymentSettings()?.bankName) {
+                  <div>{{ paymentSettings()?.bankName }}</div>
+                }
+                @if (paymentSettings()?.accountHolder) {
+                  <div class="text-muted">Hesap sahibi: {{ paymentSettings()?.accountHolder }}</div>
+                }
+              </span>
+            </div>
+          }
+        </div>
+
+        <div class="payment-layout">
+          <div class="card-preview" [class.card-preview--back]="cardSide() === 'back'">
+            <div class="card-face card-face--front">
+              <div class="card-chip"></div>
+              <div class="card-brand">
+                @switch (cardPreview().brand) {
+                  @case ('visa') { <span class="brand badge-visa">VISA</span> }
+                  @case ('mastercard') { <span class="brand badge-mastercard"><span></span><span></span><strong>Mastercard</strong></span> }
+                  @case ('troy') { <span class="brand badge-troy">troy</span> }
+                  @case ('amex') { <span class="brand badge-amex">AMEX</span> }
+                  @default { <span class="brand badge-generic">CARD</span> }
+                }
+              </div>
+              <div class="card-number">{{ cardPreview().number }}</div>
+              <div class="card-footer">
+                <div class="card-holder">
+                  <span>Kart Sahibi</span>
+                  <strong>{{ cardPreview().holder }}</strong>
+                </div>
+                <div class="card-expiry">
+                  <span>Son Kullanma</span>
+                  <strong>{{ cardPreview().expiry }}</strong>
+                </div>
+              </div>
+            </div>
+            <div class="card-face card-face--back">
+              <div class="card-strip"></div>
+              <div class="card-signature">
+                <span>CVV</span>
+                <div class="card-cvv">{{ cardPreview().cvv }}</div>
+              </div>
+            </div>
+          </div>
+
+          <form [formGroup]="paymentForm" class="form-grid payment-form" (ngSubmit)="submitPaymentForm()">
+            <div class="form-field form-field--full">
+              <label for="cardHolder">Kart Sahibi *</label>
+              <input id="cardHolder" type="text" formControlName="cardHolder" placeholder="Kart üzerindeki isim" (focus)="onCvvFocus(false)">
+            </div>
+            <div class="form-field form-field--full">
+              <label for="cardNumber">Kart Numarası *</label>
+              <input id="cardNumber" type="text" formControlName="cardNumber" placeholder="0000 0000 0000 0000" (focus)="onCvvFocus(false)">
+            </div>
+            <div class="form-field">
+              <label for="expiryMonth">Ay *</label>
+              <input id="expiryMonth" type="text" formControlName="expiryMonth" placeholder="MM" (focus)="onCvvFocus(false)">
+            </div>
+            <div class="form-field">
+              <label for="expiryYear">Yıl *</label>
+              <input id="expiryYear" type="text" formControlName="expiryYear" placeholder="YY" (focus)="onCvvFocus(false)">
+            </div>
+            <div class="form-field">
+              <label for="cvv">CVV *</label>
+              <input id="cvv"
+                     type="password"
+                     formControlName="cvv"
+                     placeholder="***"
+                     (focus)="onCvvFocus(true)"
+                     (blur)="onCvvFocus(false)">
+            </div>
+            <div class="form-field">
+              <label for="installment">Taksit</label>
+              <select id="installment" formControlName="installment" (focus)="onCvvFocus(false)">
+                @for (installment of installments(); track installment) {
+                  <option [value]="installment">{{ installment }} taksit</option>
+                }
+              </select>
+            </div>
+
+            @if (paymentError()) {
+              <div class="alert alert-error form-field--full">
+                {{ paymentError() }}
+              </div>
+            }
+
+            <div class="form-actions">
+              <button class="secondary-button" type="button" (click)="goBack(2)">Geri dön</button>
+              <button class="primary-button" type="submit" [disabled]="paymentLoading()">
+                @if (paymentLoading()) {
+                  <span class="spinner"></span>
+                  Ödeme alınıyor...
+                } @else {
+                  <span>Ödemeyi tamamla</span>
+                }
+              </button>
+            </div>
+          </form>
+        </div>
+
+        @if (paymentResponse()) {
+          <div class="alert alert-success payment-result">
+            <div>
+              <strong>Ödeme başarılı!</strong>
+              <p>Bankanız: {{ paymentResponse()?.bankName ?? 'Belirleniyor' }} • Taksit: {{ paymentResponse()?.installment }}</p>
+            </div>
+            <div class="reference">
+              <span>Referans:</span>
+              <code>{{ paymentResponse()?.reference }}</code>
+            </div>
+          </div>
+        }
+
+        @if (subscriptionError()) {
+          <div class="alert alert-error">
+            {{ subscriptionError() }}
+          </div>
+        }
+      </section>
+    }
+
+    @if (currentStep() === 4) {
+      <section class="card-section success-section" aria-label="Kurulum tamamlandı">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Hazırsınız!</h2>
+            <p class="section-subtitle">De'Bakiim hesabınız başarıyla oluşturuldu. Giriş bilgilerinizi ve lisans anahtarınızı aşağıda bulabilirsiniz.</p>
+          </div>
+          <button class="link-button" type="button" (click)="resetFlow(true)">Yeni bir firma ekle</button>
+        </div>
+
+        <div class="success-summary">
+          <div class="success-icon">📬</div>
+          <div>
+            <h3>Lisans bilgileriniz e-posta ile gönderildi</h3>
+            <p>
+              Plan detaylarınız ve aktivasyon anahtarınız birkaç dakika içinde
+              <strong>{{ companyForm.get('email')?.value || 'firmaya ait e-posta adresine' }}</strong>
+              ulaştırılacaktır.
+            </p>
+          </div>
+        </div>
+
+        <div id="onboarding-guide" class="success-features">
+          <h3>Sıradaki adımlar</h3>
+          <ul>
+            <li>• Gelen kutunuzu kontrol edin ve lisans e-postasını güvenli bir yerde saklayın.</li>
+            <li>• De'Bakiim yönetim paneline giriş yaparak kullanıcı rollerini tanımlayın.</li>
+            <li>• Cihaz aktivasyonları için e-postadaki talimatları takip edin.</li>
+            <li>• Destek ihtiyacınız olursa <strong>destek@debakiim.com</strong> ekibimizle iletişime geçin.</li>
+          </ul>
+        </div>
+      </section>
+    }
+  </main>
+
+  <section class="cta-banner">
+    <div class="cta-content">
+      <h2>De'Bakiim ile sesli sipariş kültürünü başlatın</h2>
+      <p>Planınızı seçin, firmanızı oluşturun ve birkaç dakika içinde ilk lisans anahtarınızı alın.</p>
+    </div>
+    <a class="primary-button" href="#plans">
+      <i>✨</i> Şimdi Başlayın
+    </a>
+  </section>
+
+  <footer class="page-footer">
+    <div class="footer-main">
+      <div class="footer-brand">
+        <strong>De'Bakiim</strong>
+        <span>© {{ currentYear }} Hosteagle Information Technologies</span>
+      </div>
+      <nav class="footer-links">
+        <a routerLink="/hakkimizda">Hakkımızda</a>
+        <a routerLink="/teslimat-ve-iade">Teslimat ve İade Şartları</a>
+        <a routerLink="/gizlilik-sozlesmesi">Gizlilik Sözleşmesi</a>
+        <a routerLink="/mesafeli-satis-sozlesmesi">Mesafeli Satış Sözleşmesi</a>
+      </nav>
+      <div class="footer-contact">
+        <a href="mailto:destek@bisoyle.com">destek@bisoyle.com</a>
+        <a href="tel:+902120000000">+90 212 000 00 00</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-security">
+        <div class="ssl-badge">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM12 7C13.4 7 14.8 8.6 14.8 10V11H16V17H8V11H9.2V10C9.2 8.6 10.6 7 12 7ZM12 8.2C11.2 8.2 10.4 8.7 10.4 10V11H13.6V10C13.6 8.7 12.8 8.2 12 8.2Z" fill="currentColor"/>
+          </svg>
+          <span>SSL Güvenli</span>
+        </div>
+      </div>
+      <div class="footer-payment-logos">
+        <div class="payment-brands">
+          <img src="assets/images/visa-logo.svg" alt="Visa" class="payment-logo" onerror="this.style.display='none'">
+          <img src="assets/images/mastercard-logo.svg" alt="MasterCard" class="payment-logo" onerror="this.style.display='none'">
+        </div>
+        <div class="iyzico-logo">
+          <img src="assets/images/iyzico-logo.svg" alt="iyzico ile Öde" class="iyzico-logo-img" onerror="this.style.display='none'">
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>

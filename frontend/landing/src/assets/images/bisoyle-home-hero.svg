@@ -1,0 +1,35 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="720" rx="32" fill="#0A2647"/>
+  <rect x="40" y="40" width="1120" height="640" rx="24" fill="#122E57"/>
+  <rect x="40" y="40" width="1120" height="120" rx="24" fill="#173872"/>
+  <circle cx="120" cy="100" r="32" fill="#1F4C9A"/>
+  <rect x="184" y="76" width="220" height="18" rx="9" fill="#5FB0FF"/>
+  <rect x="184" y="104" width="140" height="12" rx="6" fill="#3E6BC1"/>
+  <rect x="950" y="80" width="180" height="48" rx="12" fill="#5FB0FF"/>
+  <rect x="960" y="92" width="160" height="24" rx="12" fill="#0A2647" opacity="0.35"/>
+  <rect x="80" y="200" width="320" height="200" rx="24" fill="#5FB0FF" opacity="0.15"/>
+  <rect x="80" y="200" width="320" height="72" rx="24" fill="#5FB0FF" opacity="0.35"/>
+  <rect x="104" y="220" width="180" height="20" rx="10" fill="#5FB0FF"/>
+  <rect x="104" y="256" width="140" height="16" rx="8" fill="#B7D7FF"/>
+  <rect x="104" y="320" width="220" height="20" rx="10" fill="#3E6BC1"/>
+  <rect x="104" y="356" width="180" height="16" rx="8" fill="#2F5AA2"/>
+  <rect x="440" y="200" width="680" height="200" rx="24" fill="#0F2F58"/>
+  <rect x="464" y="220" width="220" height="20" rx="10" fill="#5FB0FF"/>
+  <rect x="464" y="260" width="580" height="16" rx="8" fill="#264D87"/>
+  <rect x="464" y="300" width="580" height="16" rx="8" fill="#264D87" opacity="0.7"/>
+  <rect x="464" y="340" width="340" height="16" rx="8" fill="#264D87" opacity="0.5"/>
+  <rect x="80" y="440" width="1040" height="200" rx="24" fill="#0F2F58"/>
+  <rect x="104" y="464" width="160" height="20" rx="10" fill="#5FB0FF"/>
+  <rect x="104" y="504" width="320" height="120" rx="16" fill="#193B6E"/>
+  <rect x="456" y="504" width="320" height="120" rx="16" fill="#193B6E"/>
+  <rect x="808" y="504" width="272" height="120" rx="16" fill="#193B6E"/>
+  <rect x="120" y="520" width="120" height="16" rx="8" fill="#5FB0FF" opacity="0.8"/>
+  <rect x="120" y="552" width="180" height="12" rx="6" fill="#5FB0FF" opacity="0.4"/>
+  <rect x="472" y="520" width="120" height="16" rx="8" fill="#5FB0FF" opacity="0.8"/>
+  <rect x="472" y="552" width="200" height="12" rx="6" fill="#5FB0FF" opacity="0.4"/>
+  <rect x="824" y="520" width="120" height="16" rx="8" fill="#5FB0FF" opacity="0.8"/>
+  <rect x="824" y="552" width="200" height="12" rx="6" fill="#5FB0FF" opacity="0.4"/>
+  <text x="120" y="620" fill="#5FB0FF" font-size="28" font-family="Segoe UI, sans-serif">De'Bakiim Dashboard Preview</text>
+  <rect x="950" y="620" width="140" height="40" rx="20" fill="#5FB0FF"/>
+</svg>
+

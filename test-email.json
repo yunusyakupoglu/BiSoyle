@@ -1,0 +1,12 @@
+{
+  "mailSettings": {
+    "host": "debakiim.com",
+    "port": 465,
+    "security": "SSL",
+    "username": "licence@debakiim.com",
+    "password": "debakiim@2025**",
+    "fromEmail": "licence@debakiim.com",
+    "fromName": "De'Bakiim Sesli Adisyon Sistemi"
+  },
+  "toEmail": "yunuscakal60@gmail.com"
+}

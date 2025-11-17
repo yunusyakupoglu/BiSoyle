@@ -1,6 +1,202 @@
 <div class="container-xxl">
   <div class="row">
     <div class="col-12">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h4 class="card-title mb-1 d-flex align-items-center gap-2">
+            <i class="bx bx-credit-card-front fs-4 text-primary"></i>
+            Ödeme Bilgileri
+          </h4>
+          <p class="text-muted mb-0">Landing sayfasındaki ödemelerin aktarılacağı IBAN bilgisini yönetin.</p>
+        </div>
+        <div class="card-body">
+          <form #paymentForm="ngForm" (ngSubmit)="savePaymentSettings(paymentForm)" class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">IBAN <span class="text-danger">*</span></label>
+              <input type="text"
+                     class="form-control"
+                     name="iban"
+                     required
+                     minlength="16"
+                     [(ngModel)]="paymentSettings.iban"
+                     placeholder="TRXX XXXX XXXX XXXX XXXX XXXX XX">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Banka Adı</label>
+              <input type="text"
+                     class="form-control"
+                     name="bankName"
+                     [(ngModel)]="paymentSettings.bankName"
+                     placeholder="Örn: Garanti BBVA">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Hesap Sahibi</label>
+              <input type="text"
+                     class="form-control"
+                     name="accountHolder"
+                     [(ngModel)]="paymentSettings.accountHolder"
+                     placeholder="Şirket unvanı">
+            </div>
+
+            @if (paymentSettingsError) {
+              <div class="col-12">
+                <div class="alert alert-danger mb-0">
+                  {{ paymentSettingsError }}
+                </div>
+              </div>
+            }
+
+            @if (paymentSettingsSuccess) {
+              <div class="col-12">
+                <div class="alert alert-success mb-0">
+                  {{ paymentSettingsSuccess }}
+                  @if (paymentSettings.updatedAt) {
+                    <span class="d-block small mt-1 text-muted">Son güncelleme: {{ paymentSettings.updatedAt | date:'dd.MM.yyyy HH:mm' }}</span>
+                  }
+                </div>
+              </div>
+            } @else if (paymentSettings.updatedAt) {
+              <div class="col-12">
+                <small class="text-muted">
+                  Son güncelleme: {{ paymentSettings.updatedAt | date:'dd.MM.yyyy HH:mm' }}
+                </small>
+              </div>
+            }
+
+            <div class="col-12 d-flex justify-content-end">
+              <button type="submit"
+                      class="btn btn-primary"
+                      [disabled]="savingPaymentSettings || paymentForm.invalid">
+                @if (savingPaymentSettings) {
+                  <span class="spinner-border spinner-border-sm me-2"></span>
+                  Kaydediliyor...
+                } @else {
+                  <i class="bx bx-save me-1"></i> Ayarları Kaydet
+                }
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    <div class="card mb-4">
+      <div class="card-header">
+        <h4 class="card-title mb-1 d-flex align-items-center gap-2">
+          <i class="bx bx-envelope fs-4 text-primary"></i>
+          Mail İstemcisi
+        </h4>
+        <p class="text-muted mb-0">Lisans e-postalarının gönderileceği SMTP bilgilerini tanımlayın.</p>
+      </div>
+      <div class="card-body">
+        <form #mailForm="ngForm" (ngSubmit)="saveMailSettings(mailForm)" class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Sunucu (Host) <span class="text-danger">*</span></label>
+            <input type="text"
+                   class="form-control"
+                   name="host"
+                   required
+                   [(ngModel)]="mailSettings.host"
+                   placeholder="smtp.ornek.com">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Port <span class="text-danger">*</span></label>
+            <input type="number"
+                   class="form-control"
+                   name="port"
+                   min="1"
+                   required
+                   [(ngModel)]="mailSettings.port">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Bağlantı Türü</label>
+            <select class="form-select"
+                    name="security"
+                    [(ngModel)]="mailSettings.security">
+              @for (option of mailSecurityOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">SMTP Kullanıcı Adı <span class="text-danger">*</span></label>
+            <input type="text"
+                   class="form-control"
+                   name="username"
+                   required
+                   [(ngModel)]="mailSettings.username"
+                   placeholder="smtp@ornek.com">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">
+              SMTP Parolası
+              @if (mailSettings.passwordSet) {
+                <small class="text-muted">(boş bırakırsanız mevcut parola korunur)</small>
+              }
+            </label>
+            <input type="password"
+                   class="form-control"
+                   name="password"
+                   [(ngModel)]="mailSettings.password"
+                   placeholder="Yeni parola">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Gönderen E-posta <span class="text-danger">*</span></label>
+            <input type="email"
+                   class="form-control"
+                   name="fromEmail"
+                   required
+                   [(ngModel)]="mailSettings.fromEmail"
+                   placeholder="destek@debakiim.com">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Gönderen Adı</label>
+            <input type="text"
+                   class="form-control"
+                   name="fromName"
+                   [(ngModel)]="mailSettings.fromName"
+                   placeholder="De'Bakiim Destek">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Yanıt Adresi (Opsiyonel)</label>
+            <input type="email"
+                   class="form-control"
+                   name="replyTo"
+                   [(ngModel)]="mailSettings.replyTo"
+                   placeholder="destek@ornek.com">
+          </div>
+
+          @if (mailSettingsError) {
+            <div class="col-12">
+              <div class="alert alert-danger mb-0">
+                {{ mailSettingsError }}
+              </div>
+            </div>
+          }
+
+          @if (mailSettingsSuccess) {
+            <div class="col-12">
+              <div class="alert alert-success mb-0">
+                {{ mailSettingsSuccess }}
+              </div>
+            </div>
+          }
+
+          <div class="col-12 d-flex justify-content-end">
+            <button type="submit"
+                    class="btn btn-primary"
+                    [disabled]="savingMailSettings || mailForm.invalid">
+              @if (savingMailSettings) {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                Kaydediliyor...
+              } @else {
+                <i class="bx bx-save me-1"></i> Ayarları Kaydet
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <div>
@@ -52,6 +248,10 @@
                             <i class="bx bx-check text-success fs-5 me-2"></i> 
                             <strong>{{ plan.maxKullaniciSayisi }}</strong> Kullanıcı
                           </li>
+                          <li class="mb-2">
+                            <i class="bx bx-devices text-success fs-5 me-2"></i> 
+                            <strong>{{ plan.maxBayiSayisi || plan.MaxBayiSayisi }}</strong> Cihaz
+                          </li>
                         </ul>
                         <div class="d-flex gap-1">
                           <button class="btn btn-sm btn-light flex-fill" (click)="openEditModal(plan)">
@@ -100,6 +300,12 @@
             <label class="form-label">Maksimum Kullanıcı Sayısı <span class="text-danger">*</span></label>
             <input type="number" class="form-control" [(ngModel)]="formData.maxKullaniciSayisi" 
                    name="maxKullaniciSayisi" min="1" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Maksimum Cihaz Sayısı <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" [(ngModel)]="formData.maxBayiSayisi" 
+                   name="maxBayiSayisi" min="1" required>
+            <small class="text-muted">Bu plan için aynı anda lisanslanabilecek maksimum cihaz sayısıdır.</small>
           </div>
           <div class="mb-3">
             <label class="form-label">Aylık Ücret (₺) <span class="text-danger">*</span></label>

@@ -1,0 +1,197 @@
+// Ticket Management Styles
+
+.message-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  
+  li {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    
+    &:hover {
+      background-color: #f8f9fa;
+    }
+    
+    &.active {
+      background-color: #e7f3ff;
+      border-left: 3px solid #0d6efd;
+    }
+  }
+}
+
+.col-mail {
+  display: flex;
+  align-items: center;
+  
+  &.col-mail-1 {
+    width: 60%;
+    min-width: 0;
+    padding-right: 15px;
+    
+    .checkbox-wrapper-mail {
+      display: inline-block;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+    
+    .star-toggle,
+    .important-toggle {
+      display: inline-block;
+      margin-right: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      color: #6c757d;
+      flex-shrink: 0;
+      transition: color 0.2s;
+      
+      &:hover {
+        color: #ffc107;
+      }
+    }
+  }
+  
+  &.col-mail-2 {
+    width: 40%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+}
+
+.mail-read {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  z-index: 990 !important;
+  
+  .offcanvas-body {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  .offcanvas-header {
+    z-index: 1000 !important;
+  }
+  
+  textarea.form-control {
+    pointer-events: auto !important;
+    z-index: 1 !important;
+  }
+  
+  input.form-control {
+    pointer-events: auto !important;
+    z-index: 1 !important;
+  }
+  
+  button {
+    pointer-events: auto !important;
+    z-index: 1 !important;
+  }
+}
+
+
+.message-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  
+  li {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    
+    &:hover {
+      background-color: #f8f9fa;
+    }
+    
+    &.active {
+      background-color: #e7f3ff;
+      border-left: 3px solid #0d6efd;
+    }
+  }
+}
+
+.col-mail {
+  display: flex;
+  align-items: center;
+  
+  &.col-mail-1 {
+    width: 60%;
+    min-width: 0;
+    padding-right: 15px;
+    
+    .checkbox-wrapper-mail {
+      display: inline-block;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+    
+    .star-toggle,
+    .important-toggle {
+      display: inline-block;
+      margin-right: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      color: #6c757d;
+      flex-shrink: 0;
+      transition: color 0.2s;
+      
+      &:hover {
+        color: #ffc107;
+      }
+    }
+  }
+  
+  &.col-mail-2 {
+    width: 40%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+}
+
+.mail-read {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  z-index: 990 !important;
+  
+  .offcanvas-body {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  .offcanvas-header {
+    z-index: 1000 !important;
+  }
+  
+  textarea.form-control {
+    pointer-events: auto !important;
+    z-index: 1 !important;
+  }
+  
+  input.form-control {
+    pointer-events: auto !important;
+    z-index: 1 !important;
+  }
+  
+  button {
+    pointer-events: auto !important;
+    z-index: 1 !important;
+  }
+}
+
+
+

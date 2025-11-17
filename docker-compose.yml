@@ -37,12 +37,18 @@ services:
       - TRANSACTION_SERVICE_URL=http://transaction-service:5003
       - USER_SERVICE_URL=http://user-service:5004
       - TENANT_SERVICE_URL=http://tenant-service:5005
+      - TASK_SERVICE_URL=http://task-service:5007
+      - ANNOUNCEMENT_SERVICE_URL=http://announcement-service:5008
+      - TICKET_SERVICE_URL=http://ticket-service:5009
     depends_on:
       - receipt-service
       - product-service
       - transaction-service
       - user-service
       - tenant-service
+      - task-service
+      - announcement-service
+      - ticket-service
 
   receipt-service:
     build:
@@ -108,17 +114,73 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_started
+      email-service:
+        condition: service_started
+
+  task-service:
+    build:
+      context: ./services/task-service
+    ports:
+      - "5007:5007"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=bisoyle_task;Username=postgres;Password=postgres123
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+
+  announcement-service:
+    build:
+      context: ./services/announcement-service
+    ports:
+      - "5008:5008"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=bisoyle_announcement;Username=postgres;Password=postgres123
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+
+  ticket-service:
+    build:
+      context: ./services/ticket-service
+    ports:
+      - "5009:5009"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=bisoyle_ticket;Username=postgres;Password=postgres123
+      - USER_SERVICE_URL=http://user-service:5004
+      - EMAIL_SERVICE_URL=http://email-service:80
+    volumes:
+      - ticket-uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+
+  email-service:
+    build:
+      context: ./services/email-service
+    ports:
+      - "5011:80"
+    environment:
+      - ASPNETCORE_URLS=http://0.0.0.0:80
 
   voice-service:
     build:
       context: ./services/voice-service
     ports:
       - "8765:8765"
+      - "8766:8766"
     volumes:
       - ./voice-models:/app/models
 
 volumes:
   postgres_data:
+    driver: local
+  ticket-uploads:
     driver: local
 
 networks:

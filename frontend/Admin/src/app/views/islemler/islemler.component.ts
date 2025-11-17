@@ -1,10 +1,11 @@
-import { Component, OnInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from 'src/app/services/auth.service';
 import { TransactionRefreshService } from 'src/app/services/transaction-refresh.service';
 import { Subscription } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 interface Islem {
   id: number;
@@ -59,6 +60,7 @@ export class IslemlerComponent implements OnInit, OnDestroy {
   
   // Form alanları
   islemKodu: string = '';
+  islemTipi: string = 'SATIS'; // Varsayılan: SATIS
   seciliUrunler: UrunDetayItem[] = [];
   toplamTutar: number = 0;
   
@@ -67,7 +69,8 @@ export class IslemlerComponent implements OnInit, OnDestroy {
   constructor(
     private http: HttpClient,
     private authService: AuthService,
-    private transactionRefreshService: TransactionRefreshService
+    private transactionRefreshService: TransactionRefreshService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -89,7 +92,9 @@ export class IslemlerComponent implements OnInit, OnDestroy {
   }
 
   olcuBirimleriniGetir() {
-    this.http.get<OlcuBirimi[]>('http://localhost:5000/api/v1/unit-of-measures', { headers: this.headers }).subscribe({
+    const tenantId = this.authService.getUser()?.tenantId;
+    const qs = tenantId ? `?tenantId=${tenantId}` : '';
+    this.http.get<OlcuBirimi[]>(`${environment.apiUrl}/unit-of-measures${qs}`, { headers: this.headers }).subscribe({
       next: (data) => this.olcuBirimleri = data,
       error: (err) => console.error('Olcu birimleri yüklenemedi:', err)
     });
@@ -104,7 +109,23 @@ export class IslemlerComponent implements OnInit, OnDestroy {
 
   islemleriGetir() {
     this.yukleniyor = true;
-    this.http.get<Islem[]>('http://localhost:5000/api/v1/transactions', { headers: this.headers }).subscribe({
+    const user = this.authService.getUser();
+    const tenantId = user?.tenantId;
+    const userRoles = user?.roles || [];
+    const isUser = userRoles.includes('User') && !userRoles.includes('Admin') && !userRoles.includes('SuperAdmin');
+    
+    // Query string oluştur
+    const params = new URLSearchParams();
+    if (tenantId) {
+      params.append('tenantId', tenantId.toString());
+    }
+    // User rolü ise sadece kendi işlemlerini göster
+    if (isUser && user?.id) {
+      params.append('userId', user.id.toString());
+    }
+    
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    this.http.get<Islem[]>(`${environment.apiUrl}/transactions${qs}`, { headers: this.headers }).subscribe({
       next: (data) => {
         this.islemler = data;
         this.yukleniyor = false;
@@ -117,7 +138,9 @@ export class IslemlerComponent implements OnInit, OnDestroy {
   }
 
   urunleriGetir() {
-    this.http.get<Urun[]>('http://localhost:5000/api/v1/products', { headers: this.headers }).subscribe({
+    const tenantId = this.authService.getUser()?.tenantId;
+    const qs = tenantId ? `?tenantId=${tenantId}` : '';
+    this.http.get<Urun[]>(`${environment.apiUrl}/products${qs}`, { headers: this.headers }).subscribe({
       next: (data) => {
         this.urunler = data;
       },
@@ -163,7 +186,8 @@ export class IslemlerComponent implements OnInit, OnDestroy {
   hesaplaToplamTutar() {
     this.toplamTutar = this.seciliUrunler.reduce((total, item) => {
       const birimFiyat = this.getUrunBirimFiyat(item.urun_id);
-      return total + (birimFiyat * item.miktar);
+      const miktar = Number(item.miktar) || 0;
+      return total + (birimFiyat * miktar);
     }, 0);
   }
 
@@ -180,24 +204,53 @@ export class IslemlerComponent implements OnInit, OnDestroy {
   getUrunOlcuBirimi(urunId: number): string {
     const urun = this.urunler.find(u => u.id === urunId);
     if (!urun) return '';
-    
-    const olcu = this.olcuBirimleri.find(ob => ob.id === (urun.kategoriId || urun.kategori_id || 0));
-    return olcu ? (olcu.birimAdi || olcu.birim_adi || olcu.kisaltma || '') : '';
+    // Product carries unit name directly
+    return (urun.olcuBirimi as any) || (urun as any).olcu_birimi || '';
   }
 
-  onUrunSelected(index: number, event: any) {
-    // Force change detection
+  onUrunSelected(index: number, selectedUrunId: any) {
     const selectedUrun = this.seciliUrunler[index];
-    const selectedUrunId = parseInt(event.target.value);
+    if (!selectedUrun) return;
     
-    if (selectedUrun && selectedUrunId && selectedUrunId !== 0) {
-      selectedUrun.urun_id = selectedUrunId;
-      
-      // Auto-fill birim fiyat from product
-      const birimFiyat = this.getUrunBirimFiyat(selectedUrunId);
-      selectedUrun.birim_fiyat = birimFiyat;
-      
+    // ngModelChange event'i direkt değeri döner (number veya string)
+    // [(ngModel)] zaten item.urun_id'yi set ediyor, bu yüzden tekrar set etmiyoruz
+    const urunId = typeof selectedUrunId === 'number' 
+      ? selectedUrunId 
+      : parseInt(selectedUrunId || '0');
+    
+    if (urunId && urunId !== 0) {
+      // Veritabanından güncel ürün/birim fiyatını çek
+      const headers = this.headers;
+      this.http.get<any>(`${environment.apiUrl}/products/${urunId}`, { headers }).subscribe({
+        next: (urun) => {
+          // Cache'i güncelle
+          const idx = this.urunler.findIndex(u => u.id === urun.id);
+          if (idx > -1) {
+            this.urunler[idx] = { ...this.urunler[idx], ...urun };
+          } else {
+            this.urunler.push(urun);
+          }
+          // Birim fiyatı modele yaz
+          const birimFiyat = Number(urun?.birimFiyat ?? urun?.birim_fiyat ?? 0);
+          selectedUrun.birim_fiyat = birimFiyat;
+          this.hesaplaToplamTutar();
+          // Change detection'ı tetikle
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Ürün bilgisi alınamadı:', err);
+          // Fallback: listeden oku
+          const birimFiyat = this.getUrunBirimFiyat(urunId);
+          selectedUrun.birim_fiyat = birimFiyat;
+          this.hesaplaToplamTutar();
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      // Ürün seçimi temizlendi
+      selectedUrun.birim_fiyat = 0;
       this.hesaplaToplamTutar();
+      this.cdr.detectChanges();
     }
   }
 
@@ -237,17 +290,18 @@ export class IslemlerComponent implements OnInit, OnDestroy {
       tenantId: user?.tenantId || 1,
       userId: user?.id || 1,
       islemKodu: this.islemKodu,
-      islemTipi: 'SATIS',
+      islemTipi: this.islemTipi, // Kullanıcının seçtiği işlem tipi
       odemeTipi: 'NAKIT',
       items: items,
       toplamTutar: this.toplamTutar
     };
 
-    this.http.post<Islem>('http://localhost:5000/api/v1/transactions', yeniIslem, { headers: this.headers }).subscribe({
+    this.http.post<Islem>(`${environment.apiUrl}/transactions`, yeniIslem, { headers: this.headers }).subscribe({
       next: () => {
         alert('İşlem eklendi');
         this.islemleriGetir();
         this.islemKodu = '';
+        this.islemTipi = 'SATIS'; // Varsayılan değere dön
         this.seciliUrunler = [];
         this.toplamTutar = 0;
       },
@@ -260,7 +314,7 @@ export class IslemlerComponent implements OnInit, OnDestroy {
 
   islemSil(id: number) {
     if (confirm('Bu işlemi silmek istediğinizden emin misiniz?')) {
-      this.http.delete(`http://localhost:5000/api/v1/transactions/${id}`, { headers: this.headers }).subscribe({
+      this.http.delete(`${environment.apiUrl}/transactions/${id}`, { headers: this.headers }).subscribe({
         next: () => {
           alert('İşlem silindi');
           this.islemleriGetir();

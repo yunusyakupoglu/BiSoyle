@@ -133,6 +133,68 @@
           </div>
         </div>
 
+        <!-- Task Notifications (Admin only) -->
+        <div ngbDropdown class="topbar-item" (openChange)="loadNotifications()" *ngIf="isAdmin || showNotifications">
+            <button
+              ngbDropdownToggle
+              type="button"
+              class="topbar-button"
+              id="task-notifications-dropdown"
+            >
+              <iconify-icon
+                icon="iconamoon:notification-duotone"
+                class="fs-24 align-middle position-relative"
+                style="display: inline-block;"
+              ></iconify-icon>
+              <span *ngIf="unreadCount > 0" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
+                      style="font-size: 0.6rem;">
+                  {{ unreadCount }}
+                </span>
+            </button>
+            <div ngbDropdownMenu class="dropdown-menu dropdown-menu-end" style="width: 350px;">
+              <div class="dropdown-header noti-title d-flex justify-content-between align-items-center">
+                <h6 class="text-overflow m-0">Bildirimler</h6>
+                <button *ngIf="unreadCount > 0" class="btn btn-sm btn-link p-0" (click)="markAllAsRead()" style="font-size: 0.75rem;">
+                  Tümünü Okundu İşaretle
+                </button>
+              </div>
+              <div style="max-height: 400px; overflow-y: auto;">
+                <div *ngIf="taskNotifications.length === 0" class="dropdown-item text-center py-4">
+                  <p class="text-muted mb-0">Bildirim yok</p>
+                </div>
+                <a *ngFor="let notif of taskNotifications; trackBy: trackByNotificationId" 
+                   class="dropdown-item py-2" 
+                   [class.bg-light]="!notif.isRead"
+                   (click)="navigateToTask(notif)"
+                   style="cursor: pointer;">
+                  <div class="d-flex align-items-start gap-2">
+                    <div class="flex-grow-1">
+                      <div class="d-flex justify-content-between align-items-start mb-1">
+                        <h6 class="mb-0" [class.fw-bold]="!notif.isRead">{{ notif.title }}</h6>
+                        <button 
+                          class="btn btn-sm btn-link text-danger p-0" 
+                          (click)="deleteNotification(notif, $event)"
+                          title="Sil">
+                          <iconify-icon icon="iconamoon:trash-duotone" class="fs-16"></iconify-icon>
+                        </button>
+                      </div>
+                      <p class="mb-1 text-muted small">{{ notif.message }}</p>
+                      <small class="text-muted">
+                        {{ notif.createdDate | date: 'dd.MM.yyyy HH:mm' }}
+                      </small>
+                    </div>
+                    <span *ngIf="!notif.isRead" class="badge bg-primary rounded-pill" style="font-size: 0.5rem;"></span>
+                  </div>
+                </a>
+              </div>
+              <div *ngIf="taskNotifications.length > 0" class="dropdown-divider"></div>
+              <a *ngIf="taskNotifications.length > 0" class="dropdown-item text-center py-2" (click)="loadNotifications()" style="cursor: pointer;">
+                <small class="text-muted">Yenile</small>
+              </a>
+            </div>
+          </div>
+
+
         <!-- Theme Toggle -->
         <div class="topbar-item">
           <button
@@ -162,8 +224,9 @@
             <span class="d-flex align-items-center">
               <img
                 class="rounded-circle header-profile-user"
-                [src]="authService.getUser()?.avatar || 'assets/images/users/user-1.jpg'"
+                [src]="authService.getUser()?.avatar || 'assets/images/profile-man.png'"
                 alt="Profil"
+                style="width: 32px; height: 32px; object-fit: cover;"
               />
             </span>
           </button>
@@ -190,7 +253,7 @@
               ></iconify-icon>
               <span>Profilim</span>
             </a>
-            <a class="dropdown-item" href="/speakerid">
+            <a class="dropdown-item" href="/speakerid" *ngIf="authService.getUser()?.roles?.includes('Admin') || authService.getUser()?.roles?.includes('SuperAdmin')">
               <iconify-icon
                 icon="iconamoon:microphone-duotone"
                 class="align-middle fs-18 me-1"

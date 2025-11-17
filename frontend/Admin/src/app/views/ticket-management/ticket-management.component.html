@@ -1,0 +1,52 @@
+<app-page-title title="Ticket Yönetimi" subtitle="Destek Talepleri" />
+
+<div class="row">
+  <div class="col-12">
+    <ul ngbNav #nav="ngbNav" [(activeId)]="activeTab" class="nav-tabs nav-tabs-custom nav-justified mb-3">
+      <li [ngbNavItem]="'list'">
+        <a ngbNavLink>
+          <i class="mdi mdi-ticket-outline me-1"></i> Ticket Listesi
+        </a>
+        <ng-template ngbNavContent>
+          <div class="row">
+            <div class="col-12">
+              <div class="card" id="detailDiv" style="height: calc(100vh - 350px); position: relative;">
+                <div class="card-body p-0 d-flex flex-column" style="height: 100%;">
+                  <div class="p-3 border-bottom">
+                    <ul class="nav nav-pills">
+                      <li class="nav-item">
+                        <a class="nav-link" [class.active]="activeFilter === 'Open'" (click)="activeFilter = 'Open'" href="javascript:void(0);">
+                          <i class="mdi mdi-inbox me-1"></i> Açık
+                        </a>
+                      </li>
+                      <li class="nav-item">
+                        <a class="nav-link" [class.active]="activeFilter === 'InProgress'" (click)="activeFilter = 'InProgress'" href="javascript:void(0);">
+                          <i class="mdi mdi-clock-outline me-1"></i> Devam Ediyor
+                        </a>
+                      </li>
+                      <li class="nav-item">
+                        <a class="nav-link" [class.active]="activeFilter === 'Resolved'" (click)="activeFilter = 'Resolved'" href="javascript:void(0);">
+                          <i class="mdi mdi-check-circle me-1"></i> Çözüldü
+                        </a>
+                      </li>
+                      <li class="nav-item">
+                        <a class="nav-link" [class.active]="activeFilter === 'Closed'" (click)="activeFilter = 'Closed'" href="javascript:void(0);">
+                          <i class="mdi mdi-archive me-1"></i> Kapatıldı
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                  <div class="flex-grow-1 overflow-hidden">
+                    <ticket-list [activeFilter]="activeFilter" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </li>
+    </ul>
+
+    <div [ngbNavOutlet]="nav" class="mt-2"></div>
+  </div>
+</div>

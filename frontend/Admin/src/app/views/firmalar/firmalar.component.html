@@ -5,11 +5,13 @@
         <div class="card-header d-flex justify-content-between align-items-center">
           <div>
             <h4 class="card-title mb-1">Firmalar (Tenant Yönetimi)</h4>
-            <p class="text-muted mb-0">SuperAdmin - Tüm firmaları görüntüle ve yönet</p>
+            <p class="text-muted mb-0">@if (isSuperAdmin) { SuperAdmin - Tüm firmaları görüntüle ve yönet } @else { Firmalarınızı görüntüleyin }</p>
           </div>
-          <button class="btn btn-primary" (click)="openCreateModal()">
-            <i class="bx bx-plus"></i> Yeni Firma Ekle
-          </button>
+          @if (isSuperAdmin) {
+            <button class="btn btn-primary" (click)="openCreateModal()">
+              <i class="bx bx-plus"></i> Yeni Firma Ekle
+            </button>
+          }
         </div>
         <div class="card-body">
           @if (loading) {
@@ -40,9 +42,11 @@
                       <td colspan="7" class="text-center py-5">
                         <i class="bx bx-buildings fs-1 text-muted"></i>
                         <p class="text-muted mt-2 mb-3">Henüz firma bulunmuyor.</p>
-                        <button class="btn btn-primary" (click)="openCreateModal()">
-                          <i class="bx bx-plus"></i> İlk Firmayı Ekle
-                        </button>
+                        @if (isSuperAdmin) {
+                          <button class="btn btn-primary" (click)="openCreateModal()">
+                            <i class="bx bx-plus"></i> İlk Firmayı Ekle
+                          </button>
+                        }
                       </td>
                     </tr>
                   } @else {
@@ -50,58 +54,82 @@
                       <tr>
                         <td><strong>#{{ firma.id }}</strong></td>
                         <td>
-                          <strong class="d-block">{{ firma.firmaAdi }}</strong>
-                          @if (firma.vergiNo) {
-                            <small class="text-muted">VKN: {{ firma.vergiNo }}</small>
+                          <strong class="d-block">{{ firma.firmaAdi || firma.FirmaAdi }}</strong>
+                          @if (firma.vergiNo || firma.VergiNo) {
+                            <small class="text-muted">VKN: {{ firma.vergiNo || firma.VergiNo }}</small>
                           }
                         </td>
                         <td>
                           <div>
                             <i class="bx bx-envelope me-1"></i>
-                            <small>{{ firma.email }}</small>
+                            <small>{{ firma.email || firma.Email }}</small>
                           </div>
-                          @if (firma.telefon) {
+                          @if (firma.telefon || firma.Telefon) {
                             <div>
                               <i class="bx bx-phone me-1"></i>
-                              <small>{{ firma.telefon }}</small>
+                              <small>{{ firma.telefon || firma.Telefon }}</small>
                             </div>
                           }
                         </td>
                         <td>
-                          @if (firma.subscription) {
-                            <span class="badge bg-info">{{ firma.subscription.plan }}</span>
+                          @if (firma.subscriptions && firma.subscriptions.length > 0) {
+                            <span class="badge bg-info">{{ firma.subscriptions[0].plan?.planAdi || 'Aktif Abonelik' }}</span>
                           } @else {
                             <span class="badge bg-secondary">Abonelik Yok</span>
                           }
                         </td>
                         <td>
-                          @if (firma.aktif) {
+                          @if (firma.aktif !== undefined ? firma.aktif : firma.Aktif) {
                             <span class="badge bg-success"><i class="bx bx-check"></i> Aktif</span>
                           } @else {
                             <span class="badge bg-danger"><i class="bx bx-x"></i> Pasif</span>
                           }
                         </td>
                         <td>
-                          <small class="text-muted">{{ firma.olusturmaTarihi | date:'dd.MM.yyyy' }}</small>
+                          <small class="text-muted">{{ (firma.olusturmaTarihi || firma.OlusturmaTarihi) | date:'dd.MM.yyyy' }}</small>
                         </td>
                         <td class="text-end">
                           <div class="btn-group" role="group">
-                            <button class="btn btn-sm btn-info" (click)="openCreateAdminModal(firma)" title="Admin Kullanıcı Ekle">
-                              <i class="bx bx-user-plus"></i>
-                            </button>
-                            <button class="btn btn-sm btn-light" (click)="openEditModal(firma)" title="Düzenle">
-                              <i class="bx bx-edit"></i>
-                            </button>
-                            <button class="btn btn-sm" 
-                                    [class.btn-warning]="firma.aktif"
-                                    [class.btn-success]="!firma.aktif"
-                                    (click)="toggleActive(firma)" 
-                                    [title]="firma.aktif ? 'Pasif Et' : 'Aktif Et'">
-                              <i class="bx" [class.bx-lock]="firma.aktif" [class.bx-lock-open]="!firma.aktif"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger" (click)="deleteFirma(firma)" title="Sil">
-                              <i class="bx bx-trash"></i>
-                            </button>
+                            @if (isSuperAdmin) {
+                              <!-- SuperAdmin: Firma yönetimi butonları -->
+                              <button class="btn btn-sm btn-primary d-flex align-items-center justify-content-center"
+                                      (click)="resendLicenseEmail(firma)" 
+                                      [disabled]="sendingEmail[firma.id]"
+                                      [title]="(firma.subscriptions && firma.subscriptions.length > 0) ? 'Lisans Anahtarı Email Gönder' : 'Aktif abonelik yok'"
+                                      [class.btn-secondary]="!(firma.subscriptions && firma.subscriptions.length > 0)">
+                                @if (sendingEmail[firma.id]) {
+                                  <span class="spinner-border spinner-border-sm"></span>
+                                } @else {
+                                  <i class="bx bx-envelope"></i>
+                                }
+                              </button>
+                              <button class="btn btn-sm btn-info d-flex align-items-center justify-content-center"
+                                      (click)="generatePasswordForFirma(firma)" title="Admin Parola Üret">
+                                <i class="bx bx-key"></i>
+                              </button>
+                              <button class="btn btn-sm btn-success d-flex align-items-center justify-content-center"
+                                      (click)="openSubscriptionModal(firma)" title="Abonelik Ata">
+                                <iconify-icon icon="iconamoon:certificate-badge-duotone" class="fs-16"></iconify-icon>
+                              </button>
+                              <button class="btn btn-sm btn-light" (click)="openEditModal(firma)" title="Firma Düzenle">
+                                <i class="bx bx-edit"></i>
+                              </button>
+                              <button class="btn btn-sm" 
+                                      [class.btn-warning]="(firma.aktif !== undefined ? firma.aktif : firma.Aktif)"
+                                      [class.btn-success]="!(firma.aktif !== undefined ? firma.aktif : firma.Aktif)"
+                                      (click)="toggleActive(firma)" 
+                                      [title]="(firma.aktif !== undefined ? firma.aktif : firma.Aktif) ? 'Pasif Et' : 'Aktif Et'">
+                                <i class="bx" [class.bx-lock]="(firma.aktif !== undefined ? firma.aktif : firma.Aktif)" [class.bx-lock-open]="!(firma.aktif !== undefined ? firma.aktif : firma.Aktif)"></i>
+                              </button>
+                              <button class="btn btn-sm btn-danger" (click)="deleteFirma(firma)" title="Firma Sil">
+                                <i class="bx bx-trash"></i>
+                              </button>
+                            } @else {
+                              <!-- Firma Admin: Sadece kullanıcı yönetimi -->
+                              <button class="btn btn-sm btn-info" (click)="openCreateAdminModal(firma)" title="Admin Kullanıcı Ekle">
+                                <i class="bx bx-user-plus"></i>
+                              </button>
+                            }
                           </div>
                         </td>
                       </tr>
@@ -221,6 +249,260 @@
   </div>
 </div>
 @if (showAdminModal) {
+  <div class="modal-backdrop fade show"></div>
+}
+
+<!-- Subscription Assignment Modal -->
+<div class="modal fade" tabindex="-1" [class.show]="showSubscriptionModal" [style.display]="showSubscriptionModal ? 'block' : 'none'">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ selectedFirma?.firmaAdi || selectedFirma?.FirmaAdi }} - Abonelik Ata</h5>
+        <button type="button" class="btn-close" (click)="closeSubscriptionModal()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info">
+          <i class="bx bx-info-circle"></i>
+          Firmaya abonelik atandığında lisans anahtarı otomatik oluşturulacak ve gösterilecektir.
+        </div>
+        <form>
+          <div class="mb-3">
+            <label class="form-label">Abonelik Planı <span class="text-danger">*</span></label>
+            <select class="form-select" [(ngModel)]="selectedPlanId" name="planId" (change)="onPlanChange()" required>
+              <option value="">Plan Seçiniz</option>
+              @for (plan of subscriptionPlans; track plan.id) {
+                <option [value]="plan.id">
+                  {{ plan.planAdi || plan.PlanAdi }} - 
+                  {{ plan.maxKullaniciSayisi || plan.MaxKullaniciSayisi }} Çalışan / 
+                  {{ plan.maxBayiSayisi || plan.MaxBayiSayisi }} Bayi - 
+                  {{ plan.aylikUcret || plan.AylikUcret }} ₺/ay
+                </option>
+              }
+            </select>
+            <small class="text-muted">Bayi sayısına göre lisans anahtarı oluşturulacaktır</small>
+            @if (selectedPlanId && selectedPlanForPayment) {
+              <div class="alert alert-light border mt-3">
+                <div class="d-flex align-items-start">
+                  <i class="bx bx-credit-card fs-3 text-primary me-2"></i>
+                  <div>
+                    <div><strong>Plan Ücreti:</strong> {{ selectedPlanForPayment.aylikUcret || selectedPlanForPayment.AylikUcret }} ₺ / ay</div>
+                    <div><strong>Maks. Kullanıcı:</strong> {{ selectedPlanForPayment.maxKullaniciSayisi || selectedPlanForPayment.MaxKullaniciSayisi }}</div>
+                    <div><strong>Maks. Cihaz:</strong> {{ selectedPlanForPayment.maxBayiSayisi || selectedPlanForPayment.MaxBayiSayisi }}</div>
+                    @if (paymentReference) {
+                      <div class="alert alert-success mt-3 mb-0">
+                        <strong>Ödeme tamamlandı.</strong> Referans: {{ paymentReference }} · Tutar: {{ paymentSummary?.chargedAmount }} {{ paymentSummary?.currency }}
+                      </div>
+                    } @else if ((selectedPlanForPayment.aylikUcret || selectedPlanForPayment.AylikUcret) > 0) {
+                      <div class="text-muted mt-2">
+                        Bu plan ücretlidir. Devam etmek için sanal POS üzerinden ödeme alınacaktır.
+                      </div>
+                    } @else {
+                      <div class="text-muted mt-2">
+                        Bu plan ücretsizdir. Ödeme gerektirmez.
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeSubscriptionModal()">İptal</button>
+        <button type="button" class="btn btn-primary" (click)="assignSubscription()" [disabled]="savingSubscription">
+          @if (savingSubscription) {
+            <span class="spinner-border spinner-border-sm me-1"></span>
+          }
+          Abonelik Ata
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+@if (showSubscriptionModal) {
+  <div class="modal-backdrop fade show"></div>
+}
+
+<!-- Virtual POS Payment Modal -->
+<div class="modal fade" tabindex="-1" [class.show]="showPaymentModal" [style.display]="showPaymentModal ? 'block' : 'none'">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title d-flex align-items-center gap-2">
+          <i class="bx bx-credit-card-front"></i>
+          Sanal POS - Ödeme Al
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closePaymentModal()" [disabled]="paymentProcessing"></button>
+      </div>
+      <div class="modal-body">
+        @if (selectedPlanForPayment) {
+          <div class="alert alert-info d-flex align-items-start gap-2">
+            <i class="bx bx-shopping-bag fs-3"></i>
+            <div>
+              <div><strong>Plan:</strong> {{ selectedPlanForPayment.planAdi || selectedPlanForPayment.PlanAdi }}</div>
+              <div><strong>Tutar:</strong> {{ selectedPlanForPayment.aylikUcret || selectedPlanForPayment.AylikUcret }} ₺ / ay</div>
+              <div><strong>Firma:</strong> {{ selectedFirma?.firmaAdi || selectedFirma?.FirmaAdi }}</div>
+            </div>
+          </div>
+        }
+
+        @if (paymentError) {
+          <div class="alert alert-danger">
+            <i class="bx bx-error-circle"></i> {{ paymentError }}
+          </div>
+        }
+
+        <form>
+          <div class="mb-3">
+            <label class="form-label">Kart Sahibi <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [(ngModel)]="paymentForm.cardHolder" name="cardHolder" placeholder="Ali Veli" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Kart Numarası <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [(ngModel)]="paymentForm.cardNumber" name="cardNumber" placeholder="XXXX XXXX XXXX XXXX" maxlength="23" required>
+            <small class="text-muted">Test için geçerli kart numarası girin. 0000 ile biten kartlar reddedilir.</small>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Son Kullanma Ay <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" [(ngModel)]="paymentForm.expiryMonth" name="expiryMonth" placeholder="MM" maxlength="2" required>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Son Kullanma Yıl <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" [(ngModel)]="paymentForm.expiryYear" name="expiryYear" placeholder="YY" maxlength="4" required>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">CVV <span class="text-danger">*</span></label>
+              <input type="password" class="form-control" [(ngModel)]="paymentForm.cvv" name="cvv" placeholder="XXX" maxlength="4" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Taksit Seçimi</label>
+            <select class="form-select" [(ngModel)]="paymentForm.installment" name="installment">
+              @for (installment of availableInstallments; track installment) {
+                <option [value]="installment">{{ installment }} Taksit</option>
+              }
+            </select>
+            <small class="text-muted">Taksit sayısı simülasyon amaçlıdır. Komisyon oranları otomatik hesaplanır.</small>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="closePaymentModal()" [disabled]="paymentProcessing">
+          İptal
+        </button>
+        <button type="button" class="btn btn-primary" (click)="processPayment()" [disabled]="paymentProcessing">
+          @if (paymentProcessing) {
+            <span class="spinner-border spinner-border-sm me-1"></span>
+            İşleniyor...
+          } @else {
+            <i class="bx bx-credit-card"></i> Ödeme Al
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+@if (showPaymentModal) {
+  <div class="modal-backdrop fade show"></div>
+}
+
+<!-- Admin Credentials Modal (Yeni Firma Eklendiğinde) -->
+<div class="modal fade" tabindex="-1" [class.show]="showAdminCredentialsModal" [style.display]="showAdminCredentialsModal ? 'block' : 'none'">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">
+          <i class="bx bx-check-circle"></i> Firma Başarıyla Oluşturuldu!
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAdminCredentialsModal()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning">
+          <i class="bx bx-info-circle"></i>
+          <strong>Önemli:</strong> Bu bilgileri kaydedin! Admin kullanıcı bu bilgilerle sisteme giriş yapabilir.
+          <br>
+          <small><i class="bx bx-check-circle text-success"></i> Parola otomatik olarak panoya kopyalandı. Ctrl+V ile yapıştırabilirsiniz.</small>
+        </div>
+        
+        <div class="card border-primary mb-3">
+          <div class="card-header bg-primary text-white">
+            <h6 class="mb-0"><i class="bx bx-user"></i> Admin Kullanıcı Bilgileri</h6>
+          </div>
+          <div class="card-body">
+            @if (adminCredentials) {
+              <div class="row mb-3">
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Kullanıcı Adı:</label>
+                </div>
+                <div class="col-md-8">
+                  <div class="input-group">
+                    <input type="text" class="form-control" [value]="adminCredentials.username" readonly>
+                    <button class="btn btn-outline-secondary" type="button" (click)="copyToClipboard(adminCredentials.username, 'Kullanıcı Adı')">
+                      <i class="bx bx-copy"></i> Kopyala
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row mb-3">
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">E-posta:</label>
+                </div>
+                <div class="col-md-8">
+                  <div class="input-group">
+                    <input type="text" class="form-control" [value]="adminCredentials.email" readonly>
+                    <button class="btn btn-outline-secondary" type="button" (click)="copyToClipboard(adminCredentials.email, 'E-posta')">
+                      <i class="bx bx-copy"></i> Kopyala
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row mb-3">
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Şifre:</label>
+                </div>
+                <div class="col-md-8">
+                  <div class="input-group">
+                    <input type="text" class="form-control font-monospace fw-bold text-danger" [value]="adminCredentials.password" readonly id="adminPassword">
+                    <button class="btn btn-danger" type="button" (click)="copyPasswordToClipboard()" title="Parolayı Kopyala">
+                      <i class="bx bx-copy"></i> Parolayı Kopyala
+                    </button>
+                  </div>
+                  <small class="text-muted">
+                    <i class="bx bx-check-circle text-success"></i> Parola otomatik olarak panoya kopyalandı!
+                  </small>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-12">
+                  <button class="btn btn-primary w-100" type="button" (click)="copyAllCredentials()">
+                    <i class="bx bx-copy"></i> Tüm Bilgileri Kopyala (Kullanıcı Adı + E-posta + Şifre)
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+        
+        <div class="alert alert-info">
+          <i class="bx bx-info-circle"></i>
+          <strong>Not:</strong> Firma admini ilk girişinde lisans anahtarı girişi istenecektir. 
+          Lisans anahtarı, firmaya abonelik atandığında otomatik oluşturulur.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-success" (click)="closeAdminCredentialsModal()">
+          <i class="bx bx-check"></i> Anladım, Kapat
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+@if (showAdminCredentialsModal) {
   <div class="modal-backdrop fade show"></div>
 }
 

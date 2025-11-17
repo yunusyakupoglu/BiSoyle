@@ -1,0 +1,129 @@
+<div class="card mb-0">
+  <div class="card-body">
+    <div
+      class="nav flex-column mt-3"
+      id="ticket-tab"
+      role="tablist"
+      aria-orientation="vertical"
+    >
+      <a
+        class="nav-link px-0 py-1 active show"
+        id="ticket-open-tab"
+        data-bs-toggle="pill"
+        (click)="updateData('Open', 'status')"
+        role="tab"
+        aria-controls="ticket-open"
+        aria-selected="true"
+        href="javascript:void(0);"
+      >
+        <span class="text-danger fw-bold">
+          <i class="mdi mdi-inbox fs-16 me-2 align-middle"></i> Açık
+        </span>
+      </a>
+
+      <a
+        class="nav-link px-0 py-1"
+        id="ticket-inprogress-tab"
+        data-bs-toggle="pill"
+        (click)="updateData('InProgress', 'status')"
+        href="javascript:void(0);"
+        role="tab"
+        aria-controls="ticket-inprogress"
+        aria-selected="false"
+      >
+        <i class="mdi mdi-clock-outline fs-16 align-middle me-2"></i>Devam Ediyor
+      </a>
+
+      <a
+        class="nav-link px-0 py-1"
+        id="ticket-resolved-tab"
+        data-bs-toggle="pill"
+        (click)="updateData('Resolved', 'status')"
+        href="javascript:void(0);"
+        role="tab"
+        aria-controls="ticket-resolved"
+        aria-selected="false"
+      >
+        <i class="mdi mdi-check-circle fs-16 align-middle me-2"></i>Çözüldü
+      </a>
+
+      <a
+        class="nav-link px-0 py-1"
+        id="ticket-closed-tab"
+        data-bs-toggle="pill"
+        (click)="updateData('Closed', 'status')"
+        href="javascript:void(0);"
+        role="tab"
+        aria-controls="ticket-closed"
+        aria-selected="false"
+      >
+        <i class="mdi mdi-archive fs-16 align-middle me-2"></i>Kapatıldı
+      </a>
+    </div>
+  </div>
+</div>
+
+    <div
+      class="nav flex-column mt-3"
+      id="ticket-tab"
+      role="tablist"
+      aria-orientation="vertical"
+    >
+      <a
+        class="nav-link px-0 py-1 active show"
+        id="ticket-open-tab"
+        data-bs-toggle="pill"
+        (click)="updateData('Open', 'status')"
+        role="tab"
+        aria-controls="ticket-open"
+        aria-selected="true"
+        href="javascript:void(0);"
+      >
+        <span class="text-danger fw-bold">
+          <i class="mdi mdi-inbox fs-16 me-2 align-middle"></i> Açık
+        </span>
+      </a>
+
+      <a
+        class="nav-link px-0 py-1"
+        id="ticket-inprogress-tab"
+        data-bs-toggle="pill"
+        (click)="updateData('InProgress', 'status')"
+        href="javascript:void(0);"
+        role="tab"
+        aria-controls="ticket-inprogress"
+        aria-selected="false"
+      >
+        <i class="mdi mdi-clock-outline fs-16 align-middle me-2"></i>Devam Ediyor
+      </a>
+
+      <a
+        class="nav-link px-0 py-1"
+        id="ticket-resolved-tab"
+        data-bs-toggle="pill"
+        (click)="updateData('Resolved', 'status')"
+        href="javascript:void(0);"
+        role="tab"
+        aria-controls="ticket-resolved"
+        aria-selected="false"
+      >
+        <i class="mdi mdi-check-circle fs-16 align-middle me-2"></i>Çözüldü
+      </a>
+
+      <a
+        class="nav-link px-0 py-1"
+        id="ticket-closed-tab"
+        data-bs-toggle="pill"
+        (click)="updateData('Closed', 'status')"
+        href="javascript:void(0);"
+        role="tab"
+        aria-controls="ticket-closed"
+        aria-selected="false"
+      >
+        <i class="mdi mdi-archive fs-16 align-middle me-2"></i>Kapatıldı
+      </a>
+    </div>
+  </div>
+</div>
+
+

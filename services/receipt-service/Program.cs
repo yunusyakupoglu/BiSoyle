@@ -54,14 +54,29 @@ builder.Services.AddDbContext<ReceiptDbContext>(options =>
 // SignalR
 builder.Services.AddSignalR();
 
-// CORS
+// CORS - Güvenli CORS ayarları
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        if (builder.Environment.IsDevelopment())
+        {
+            // Development: Frontend (Angular) ve diğer local servislere izin
+            policy.WithOrigins("http://localhost:4200", "http://localhost:3000", "http://127.0.0.1:4200")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials();
+        }
+        else
+        {
+            // Production: Sadece belirtilen origin'lere izin
+            var allowedOrigins = builder.Configuration["AllowedOrigins"]?.Split(',') 
+                ?? new[] { "http://localhost:4200" };
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials();
+        }
     });
 });
 
@@ -99,12 +114,38 @@ app.MapHub<ReceiptHub>("/hub/receipt");
 // Receipt endpoints
 app.MapPost("/api/receipt/print", async (HttpContext context, IHubContext<ReceiptHub> hubContext, ReceiptDbContext dbContext) =>
 {
+    // Null check: Request body
+    if (context.Request.Body == null)
+    {
+        return Results.BadRequest(new { detail = "İstek gövdesi boş!" });
+    }
+    
     var body = await new StreamReader(context.Request.Body).ReadToEndAsync();
+    
+    // Null check: Body boş olabilir
+    if (string.IsNullOrWhiteSpace(body))
+    {
+        return Results.BadRequest(new { detail = "İstek gövdesi boş!" });
+    }
+    
     var data = JsonSerializer.Deserialize<ReceiptRequest>(body);
     
-    if (data == null || data.Items == null || data.Items.Count == 0)
+    // Null check: Deserialized data
+    if (data == null)
+    {
+        return Results.BadRequest(new { detail = "Geçersiz istek formatı!" });
+    }
+    
+    // Null check: Items null veya boş olabilir
+    if (data.Items == null || data.Items.Count == 0)
     {
         return Results.BadRequest(new { detail = "Fişte ürün bulunmuyor!" });
+    }
+    
+    // Null check: TenantId ve UserId
+    if (data.TenantId <= 0 || data.UserId <= 0)
+    {
+        return Results.BadRequest(new { detail = "Geçersiz TenantId veya UserId!" });
     }
     
     var islem_kodu = $"FS-{DateTime.Now:yyyyMMddHHmmss}";
@@ -122,16 +163,26 @@ app.MapPost("/api/receipt/print", async (HttpContext context, IHubContext<Receip
     
     foreach (var item in data.Items)
     {
+        // Null check: item null olabilir
+        if (item == null)
+            continue;
+            
+        // Null check: Gerekli alanlar
+        if (item.Quantity <= 0 || item.Price <= 0)
+        {
+            return Results.BadRequest(new { detail = $"Ürün için geçersiz miktar veya fiyat: {item.Product ?? "Bilinmeyen"}" });
+        }
+        
         var subtotal = item.Quantity * item.Price;
         toplam_tutar += subtotal;
         
         receipt.Items.Add(new ReceiptItem
         {
             UrunId = item.UrunId,
-            UrunAdi = item.Product,
+            UrunAdi = item.Product ?? "Bilinmeyen Ürün",
             Miktar = item.Quantity,
             BirimFiyat = item.Price,
-            OlcuBirimi = item.Unit,
+            OlcuBirimi = item.Unit ?? "Adet",
             Subtotal = subtotal
         });
     }
@@ -149,11 +200,22 @@ app.MapPost("/api/receipt/print", async (HttpContext context, IHubContext<Receip
     var pdf_path = Path.Combine(desktopPath, pdf_filename);
     receipt.PdfPath = pdf_path;
     
-    // Save to database
+    // Save to database - Error handling iyileştirildi
     try
     {
         dbContext.Receipts.Add(receipt);
         await dbContext.SaveChangesAsync();
+    }
+    catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+    {
+        Console.WriteLine($"Database update error: {ex.Message}");
+        // Inner exception'ı kontrol et
+        var innerMessage = ex.InnerException?.Message ?? ex.Message;
+        if (innerMessage.Contains("duplicate") || innerMessage.Contains("unique"))
+        {
+            return Results.Conflict(new { detail = "Bu işlem kodu zaten kullanılıyor!" });
+        }
+        return Results.Problem($"Veritabanı hatası: {innerMessage}");
     }
     catch (Exception ex)
     {

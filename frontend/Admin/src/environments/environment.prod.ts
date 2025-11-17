@@ -1,7 +1,9 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://localhost:5000/api/v1'
+  apiUrl: 'http://localhost:5000/api/v1',
+  voiceServiceUrl: 'http://localhost:8765'
 };
+
 
 
 

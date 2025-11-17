@@ -1,9 +1,8 @@
-import { RedirectCommand, Router, Routes, type UrlTree } from '@angular/router'
+import { Routes } from '@angular/router'
 import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component'
 import { PrivateLayoutComponent } from './layouts/private-layout/private-layout.component'
-import { AuthenticationService } from './core/services/auth.service'
-import { AuthService } from './services/auth.service'
-import { inject } from '@angular/core'
+import { AuthGuard } from './guards/auth.guard'
+import { licenseGuard } from './guards/license.guard'
 
 export const routes: Routes = [
   {
@@ -14,21 +13,7 @@ export const routes: Routes = [
   {
     path: '',
     component: PrivateLayoutComponent,
-    canActivate: [
-      () => {
-        const authService = inject(AuthService)
-        const router: Router = inject(Router)
-        
-        // Bizim AuthService kullan (JWT token kontrolü)
-        if (authService.isAuthenticated()) {
-          return true
-        }
-        
-        // Token yoksa login'e yönlendir
-        const urlTree: UrlTree = router.parseUrl('/auth/sign-in')
-        return new RedirectCommand(urlTree, { skipLocationChange: false })
-      },
-    ],
+    canActivate: [AuthGuard, licenseGuard],
     loadChildren: () =>
       import('./views/views.route').then((mod) => mod.VIEW_ROUTES),
   },

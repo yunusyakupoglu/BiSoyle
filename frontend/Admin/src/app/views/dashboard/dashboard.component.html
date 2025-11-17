@@ -1,0 +1,290 @@
+<div class="container-fluid">
+  <!-- Page Title -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h4 class="mb-0">Dashboard</h4>
+          <p class="text-muted mb-0" *ngIf="isSuperAdmin">Sistem genel özet ve istatistikler</p>
+          <p class="text-muted mb-0" *ngIf="isAdmin">Firma özeti ve istatistikler</p>
+          <p class="text-muted mb-0" *ngIf="isUser">Kişisel özet ve hızlı erişim</p>
+        </div>
+        <button class="btn btn-primary" (click)="refreshData()" [disabled]="loading">
+          <i class="mdi mdi-refresh me-1"></i>
+          Yenile
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading && !error" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Yükleniyor...</span>
+    </div>
+    <p class="mt-3 text-muted">Veriler yükleniyor...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error" class="alert alert-danger" role="alert">
+    <i class="mdi mdi-alert-circle me-2"></i>
+    {{ error }}
+  </div>
+
+  <!-- Dashboard Content -->
+  <div *ngIf="!loading && !error">
+    <!-- SuperAdmin Payment Summary -->
+    <div class="row mb-4" *ngIf="isSuperAdmin && paymentSummary">
+      <div class="col-xl-2 col-md-4 mb-3" >
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6 class="text-muted mb-1">Toplam Firma</h6>
+            <h3 class="mb-0">{{ paymentSummary?.totalTenants || 0 }}</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-2 col-md-4 mb-3">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6 class="text-muted mb-1">Aktif</h6>
+            <h3 class="mb-0 text-success">{{ paymentSummary?.activeTenants || 0 }}</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-2 col-md-4 mb-3">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6 class="text-muted mb-1">Gecikmede</h6>
+            <h3 class="mb-0 text-warning">{{ paymentSummary?.overdueTenants || 0 }}</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-2 col-md-4 mb-3">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6 class="text-muted mb-1">Pasif</h6>
+            <h3 class="mb-0 text-danger">{{ paymentSummary?.deactivatedTenants || 0 }}</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-4 col-md-8 mb-3">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h6 class="text-muted mb-1">Bu Ay Tahsilat</h6>
+                <h3 class="mb-0 text-primary">{{ (paymentSummary?.paidThisMonth || 0) | number:'1.0-0' }} ₺</h3>
+              </div>
+              <div class="text-end">
+                <h6 class="text-muted mb-1">Ödeme Adedi</h6>
+                <h3 class="mb-0">{{ paymentSummary?.paymentsThisMonth || 0 }}</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SuperAdmin Monthly Payment Trend -->
+    <div class="row" *ngIf="isSuperAdmin">
+      <div class="col-12 mb-4">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0">Aylık Ödeme Trendi (₺ / Adet)</h5>
+          </div>
+          <div class="card-body">
+            <apx-chart
+              *ngIf="paymentTrendChartOptions.series"
+              [series]="paymentTrendChartOptions.series"
+              [chart]="paymentTrendChartOptions.chart"
+              [xaxis]="paymentTrendChartOptions.xaxis"
+              [yaxis]="paymentTrendChartOptions.yaxis"
+              [stroke]="paymentTrendChartOptions.stroke"
+              [dataLabels]="paymentTrendChartOptions.dataLabels"
+              [colors]="paymentTrendChartOptions.colors"
+              [legend]="paymentTrendChartOptions.legend">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Statistics Cards (role-aware) -->
+    <div class="row mb-4">
+      <div class="col-xl-3 col-md-6 mb-4" *ngIf="!isUser">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="text-muted mb-2">Bugünkü Satış</h6>
+                <h3 class="mb-0 text-primary">{{ formatCurrency(todaySales) }}</h3>
+              </div>
+              <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center">
+                <i class="mdi mdi-cash-multiple text-primary" style="font-size: 24px;"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6 mb-4" *ngIf="!isUser">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="text-muted mb-2">Bugünkü Gider</h6>
+                <h3 class="mb-0 text-danger">{{ formatCurrency(todayExpenses) }}</h3>
+              </div>
+              <div class="avatar-sm bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center">
+                <i class="mdi mdi-cash-minus text-danger" style="font-size: 24px;"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6 mb-4" *ngIf="!isUser">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="text-muted mb-2">Bugünkü Kar</h6>
+                <h3 class="mb-0" [ngClass]="todayProfit >= 0 ? 'text-success' : 'text-danger'">
+                  {{ formatCurrency(todayProfit) }}
+                </h3>
+              </div>
+              <div class="avatar-sm rounded-circle d-flex align-items-center justify-content-center"
+                   [ngClass]="todayProfit >= 0 ? 'bg-success bg-opacity-10' : 'bg-danger bg-opacity-10'">
+                <i class="mdi" 
+                   [ngClass]="todayProfit >= 0 ? 'mdi-trending-up text-success' : 'mdi-trending-down text-danger'"
+                   style="font-size: 24px;"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6 mb-4" *ngIf="isAdmin || isSuperAdmin">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="text-muted mb-2">Toplam Ürün</h6>
+                <h3 class="mb-0 text-info">{{ totalProducts }}</h3>
+              </div>
+              <div class="avatar-sm bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center">
+                <i class="mdi mdi-package-variant text-info" style="font-size: 24px;"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row" *ngIf="isAdmin || isSuperAdmin">
+      <!-- Daily Sales Chart -->
+      <div class="col-xl-8 mb-4">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0">Son 7 Günlük Satış Trendi</h5>
+          </div>
+          <div class="card-body">
+            <apx-chart
+              *ngIf="dailySalesChartOptions.series && dailySalesChartOptions.chart"
+              [series]="dailySalesChartOptions.series"
+              [chart]="dailySalesChartOptions.chart">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categories Chart -->
+      <div class="col-xl-4 mb-4">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0">Toplam Kategori</h5>
+          </div>
+          <div class="card-body">
+            <apx-chart
+              *ngIf="categoriesChartOptions.series && categoriesChartOptions.chart"
+              [series]="categoriesChartOptions.series"
+              [chart]="categoriesChartOptions.chart">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profit/Loss Chart -->
+    <div class="row" *ngIf="isAdmin || isSuperAdmin">
+      <div class="col-12 mb-4">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0">Son 7 Günlük Kar-Zarar Analizi</h5>
+          </div>
+          <div class="card-body">
+            <apx-chart
+              *ngIf="profitLossChartOptions.series && profitLossChartOptions.chart"
+              [series]="profitLossChartOptions.series"
+              [chart]="profitLossChartOptions.chart">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Çalışan Bazlı Satış İstatistikleri -->
+    <div class="row" *ngIf="(isAdmin || isSuperAdmin) && salesByEmployee.length > 0">
+      <div class="col-12 mb-4">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Bugünkü Çalışan Satış Performansı</h5>
+            <small class="text-muted">Son güncelleme: {{ currentTime | date:'HH:mm:ss' }}</small>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Çalışan</th>
+                    <th class="text-end">İşlem Sayısı</th>
+                    <th class="text-end">Toplam Satış</th>
+                    <th class="text-end">Ortalama Satış</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let emp of salesByEmployee; let i = index">
+                    <td><strong>{{ i + 1 }}</strong></td>
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2">
+                          <i class="mdi mdi-account text-primary"></i>
+                        </div>
+                        <div>
+                          <strong>{{ getEmployeeName(emp.userId) }}</strong>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="text-end">
+                      <span class="badge bg-info">{{ emp.transactionCount }}</span>
+                    </td>
+                    <td class="text-end">
+                      <strong class="text-success">{{ formatCurrency(emp.totalSales) }}</strong>
+                    </td>
+                    <td class="text-end">
+                      <small class="text-muted">{{ formatCurrency(emp.averageSale) }}</small>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+

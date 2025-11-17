@@ -1,0 +1,157 @@
+<app-page-title title="Destek Talepleri" subtitle="Ticket oluşturun ve yönetin" />
+
+<div class="row">
+  <div class="col-12">
+    <div *ngIf="success" class="alert alert-success alert-dismissible fade show" role="alert">
+      <i class="mdi mdi-check-circle me-2"></i>
+      Ticket başarıyla oluşturuldu. SuperAdmin tarafından incelenecektir.
+      <button type="button" class="btn-close" (click)="success = false" aria-label="Close"></button>
+    </div>
+
+    <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="mdi mdi-alert-circle me-2"></i>
+      {{ error }}
+      <button type="button" class="btn-close" (click)="error = null" aria-label="Close"></button>
+    </div>
+
+    <ul ngbNav #nav="ngbNav" [(activeId)]="activeTab" class="nav-tabs nav-tabs-custom nav-justified mb-3">
+      <li [ngbNavItem]="'list'">
+        <a ngbNavLink>
+          <i class="mdi mdi-ticket-outline me-1"></i> Ticket Listesi
+        </a>
+        <ng-template ngbNavContent>
+          <div class="row">
+            <div class="col-12">
+              <div class="card" id="adminDetailDiv" style="height: calc(100vh - 350px); position: relative;">
+                <div class="card-body p-0 d-flex flex-column" style="height: 100%;">
+                  <div class="p-3 border-bottom">
+                    <ul class="nav nav-pills">
+                      <li class="nav-item">
+                        <a class="nav-link" [class.active]="activeFilter === 'Open'" (click)="activeFilter = 'Open'" href="javascript:void(0);">
+                          <i class="mdi mdi-inbox me-1"></i> Açık
+                        </a>
+                      </li>
+                      <li class="nav-item">
+                        <a class="nav-link" [class.active]="activeFilter === 'InProgress'" (click)="activeFilter = 'InProgress'" href="javascript:void(0);">
+                          <i class="mdi mdi-clock-outline me-1"></i> Devam Ediyor
+                        </a>
+                      </li>
+                      <li class="nav-item">
+                        <a class="nav-link" [class.active]="activeFilter === 'Resolved'" (click)="activeFilter = 'Resolved'" href="javascript:void(0);">
+                          <i class="mdi mdi-check-circle me-1"></i> Çözüldü
+                        </a>
+                      </li>
+                      <li class="nav-item">
+                        <a class="nav-link" [class.active]="activeFilter === 'Closed'" (click)="activeFilter = 'Closed'" href="javascript:void(0);">
+                          <i class="mdi mdi-archive me-1"></i> Kapatıldı
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                  <div class="flex-grow-1 overflow-hidden">
+                    <admin-ticket-list [activeFilter]="activeFilter" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </li>
+      <li [ngbNavItem]="'create'">
+        <a ngbNavLink>
+          <i class="mdi mdi-plus-circle me-1"></i> Yeni Ticket Oluştur
+        </a>
+        <ng-template ngbNavContent>
+          <div class="card">
+            <div class="card-body">
+              <form #ticketForm="ngForm" (ngSubmit)="saveTicket()">
+                <div class="mb-3">
+                  <label for="ticketTitle" class="form-label">Başlık <span class="text-danger">*</span></label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="ticketTitle"
+                    placeholder="Ticket başlığını girin"
+                    [(ngModel)]="formData.title"
+                    name="title"
+                    required
+                  />
+                </div>
+
+                <div class="mb-3">
+                  <label for="ticketDescription" class="form-label">Açıklama <span class="text-danger">*</span></label>
+                  <textarea
+                    class="form-control"
+                    id="ticketDescription"
+                    placeholder="Ticket açıklamasını detaylı olarak girin"
+                    rows="8"
+                    [(ngModel)]="formData.description"
+                    name="description"
+                    required
+                  ></textarea>
+                </div>
+
+                <div class="mb-3">
+                  <label for="ticketPriority" class="form-label">Öncelik</label>
+                  <select class="form-select" id="ticketPriority" [(ngModel)]="formData.priority" name="priority">
+                    <option value="Low">Düşük</option>
+                    <option value="Medium" selected>Orta</option>
+                    <option value="High">Yüksek</option>
+                    <option value="Critical">Kritik</option>
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label for="ticketFiles" class="form-label">Dosya Ekle (Opsiyonel)</label>
+                  <input
+                    type="file"
+                    class="form-control"
+                    id="ticketFiles"
+                    (change)="onFileSelected($event)"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx"
+                  />
+                  <small class="text-muted">Maksimum dosya boyutu: 10MB. İzin verilen formatlar: Resim, PDF, Word</small>
+                  
+                  <div *ngIf="selectedFiles.length > 0" class="mt-2">
+                    <div *ngFor="let file of selectedFiles; let i = index" class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                      <span class="small">
+                        <i class="mdi mdi-file-outline me-1"></i>{{ file.name }} ({{ formatFileSize(file.size) }})
+                      </span>
+                      <button type="button" class="btn btn-sm btn-link text-danger p-0" (click)="removeFile(i)">
+                        <i class="mdi mdi-close"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    [disabled]="saving || !ticketForm.valid"
+                  >
+                    <span *ngIf="saving" class="spinner-border spinner-border-sm me-2"></span>
+                    <i class="mdi mdi-send me-1"></i>
+                    {{ saving ? 'Gönderiliyor...' : 'Ticket Gönder' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-light"
+                    (click)="resetForm()"
+                    [disabled]="saving"
+                  >
+                    <i class="mdi mdi-refresh me-1"></i>
+                    Temizle
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </ng-template>
+      </li>
+    </ul>
+
+    <div [ngbNavOutlet]="nav" class="mt-2"></div>
+  </div>
+</div>

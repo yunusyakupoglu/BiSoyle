@@ -10,6 +10,7 @@ import {
   type TemplateRef,
   OnInit,
   OnDestroy,
+  ChangeDetectorRef,
 } from '@angular/core'
 import {
   NgbDropdownModule,
@@ -25,6 +26,8 @@ import { Router, RouterModule } from '@angular/router'
 import { activityStreamData, appsData, notificationsData } from './data'
 import { AuthService } from '@/app/services/auth.service'
 import { TransactionRefreshService } from '@/app/services/transaction-refresh.service'
+import { environment } from '@/environments/environment'
+import { HttpClient, HttpHeaders } from '@angular/common/http'
 
 @Component({
   selector: 'app-topbar',
@@ -48,6 +51,8 @@ export class TopbarComponent implements OnInit, OnDestroy {
   offcanvasService = inject(NgbOffcanvas)
   authService = inject(AuthService)
   transactionRefreshService = inject(TransactionRefreshService)
+  http = inject(HttpClient)
+  cdr = inject(ChangeDetectorRef)
 
   notificationList = notificationsData
   appsList = appsData
@@ -59,7 +64,8 @@ export class TopbarComponent implements OnInit, OnDestroy {
   ws: WebSocket | null = null
   mediaStream: MediaStream | null = null
   audioContext: AudioContext | null = null
-  processor: ScriptProcessorNode | null = null
+  analyser: AnalyserNode | null = null
+  animationFrameId: number | null = null
   recognition: any = null
   recognizedText: string = ''
   isReceiptMode = false  // "fiş başlat" denince true olur
@@ -70,10 +76,26 @@ export class TopbarComponent implements OnInit, OnDestroy {
   voiceNotifications: any[] = []
   private maxNotifications = 5  // Max 5 bildirim göster
   
+  // Task notifications
+  taskNotifications: any[] = []
+  unreadCount = 0
+  
+  private notificationPollInterval: any = null
+  isAdmin = false
+  isSuperAdmin = false
+  
+  // DEBUG: Test için geçici olarak true yap
+  showNotifications = true
+  
   // Product cache for validation
   private productCache: any[] = []
   private productCacheTime = 0
   private readonly PRODUCT_CACHE_TTL = 60000 // 1 dakika
+  
+  // User cache for speaker-to-user mapping
+  private userCache: any[] = []
+  private userCacheTime = 0
+  private readonly USER_CACHE_TTL = 300000 // 5 dakika
   
   // Microphone permission
   microphonePermission: PermissionState | null = null
@@ -85,6 +107,200 @@ export class TopbarComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.element = document.documentElement
     this.checkMicrophonePermission()
+    // Kullanıcı bilgisi yüklenene kadar bekle - daha uzun süre
+    setTimeout(() => {
+      this.checkAdminRole()
+    }, 200)
+    
+    // Birkaç kez kontrol et (kullanıcı bilgisi geç yüklenebilir)
+    setTimeout(() => {
+      this.checkAdminRole()
+      if (this.isAdmin) {
+        this.loadNotifications()
+        this.startNotificationPolling()
+      }
+    }, 500)
+    
+    setTimeout(() => {
+      this.checkAdminRole()
+    }, 1000)
+  }
+  
+  checkAdminRole(): void {
+    const user = this.authService.getUser()
+    console.log('Topbar checkAdminRole: user =', user)
+    if (!user) {
+      console.log('Topbar: Kullanıcı bilgisi henüz yüklenmemiş')
+      this.isAdmin = false
+      this.isSuperAdmin = false
+      this.cdr.detectChanges()
+      return
+    }
+    const roles = user?.roles || []
+    const wasAdmin = this.isAdmin
+    const wasSuperAdmin = this.isSuperAdmin
+    this.isAdmin = roles.includes('Admin') || roles.includes('SuperAdmin')
+    this.isSuperAdmin = roles.includes('SuperAdmin')
+    console.log('Topbar: isAdmin =', this.isAdmin, 'isSuperAdmin =', this.isSuperAdmin, 'roles =', roles, 'wasAdmin =', wasAdmin)
+    
+    if (this.isAdmin && !wasAdmin) {
+      // İlk kez admin olarak tespit edildi, bildirimleri yükle
+      this.loadNotifications()
+      this.startNotificationPolling()
+    }
+    
+    
+    this.cdr.detectChanges()
+  }
+  
+  ngOnDestroy(): void {
+    if (this.notificationPollInterval) {
+      clearInterval(this.notificationPollInterval)
+    }
+    this.stopListening()
+  }
+  
+  get headers() {
+    const token = this.authService.getToken()
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    })
+  }
+  
+  loadNotifications(): void {
+    if (!this.isAdmin) return
+    
+    const user = this.authService.getUser()
+    if (!user || !user.id) return
+    
+    const params = new URLSearchParams()
+    params.append('userId', user.id.toString())
+    if (user.tenantId) {
+      params.append('tenantId', user.tenantId.toString())
+    }
+    
+    this.http.get<any[]>(`${environment.apiUrl}/notifications?${params.toString()}`, { headers: this.headers }).subscribe({
+      next: (notifications) => {
+        this.taskNotifications = notifications || []
+        this.updateUnreadCount()
+      },
+      error: (err) => {
+        // Sadece 500 hatası değilse log'la
+        if (err.status !== 500) {
+          console.error('Bildirimler yüklenemedi:', err)
+        }
+        // Hata durumunda mevcut bildirimleri koru
+      }
+    })
+  }
+  
+  loadUnreadCount(): void {
+    if (!this.isAdmin) return
+    
+    const user = this.authService.getUser()
+    if (!user || !user.id) return
+    
+    const params = new URLSearchParams()
+    params.append('userId', user.id.toString())
+    if (user.tenantId) {
+      params.append('tenantId', user.tenantId.toString())
+    }
+    
+    this.http.get<{count: number}>(`${environment.apiUrl}/notifications/unread-count?${params.toString()}`, { headers: this.headers }).subscribe({
+      next: (data) => {
+        this.unreadCount = data.count || 0
+      },
+      error: (err) => {
+        // Sadece 500 hatası değilse log'la, 500 hatası çok fazla olabilir
+        if (err.status !== 500) {
+          console.error('Okunmamış bildirim sayısı alınamadı:', err)
+        }
+        // Hata durumunda unreadCount'u 0 yapma, mevcut değeri koru
+      }
+    })
+  }
+  
+  updateUnreadCount(): void {
+    this.unreadCount = this.taskNotifications.filter(n => !n.isRead).length
+  }
+  
+  startNotificationPolling(): void {
+    // Her 30 saniyede bir bildirimleri kontrol et (10 saniyeden 30 saniyeye çıkarıldı)
+    this.notificationPollInterval = setInterval(() => {
+      this.loadUnreadCount()
+      // Sadece okunmamış bildirim sayısını güncelle, tüm bildirimleri her seferinde yükleme
+    }, 30000)
+  }
+  
+  markAsRead(notification: any): void {
+    if (notification.isRead) return
+    
+    this.http.patch(`${environment.apiUrl}/notifications/${notification.id}/read`, {}, { headers: this.headers }).subscribe({
+      next: () => {
+        notification.isRead = true
+        this.updateUnreadCount()
+      },
+      error: (err) => {
+        console.error('Bildirim okundu işaretlenemedi:', err)
+      }
+    })
+  }
+  
+  markAllAsRead(): void {
+    const user = this.authService.getUser()
+    if (!user || !user.id) return
+    
+    const body: any = { userId: user.id }
+    if (user.tenantId) {
+      body.tenantId = user.tenantId
+    }
+    
+    this.http.patch(`${environment.apiUrl}/notifications/read-all`, body, { headers: this.headers }).subscribe({
+      next: () => {
+        this.taskNotifications.forEach(n => n.isRead = true)
+        this.updateUnreadCount()
+      },
+      error: (err) => {
+        console.error('Tüm bildirimler okundu işaretlenemedi:', err)
+      }
+    })
+  }
+  
+  deleteNotification(notification: any, event: Event): void {
+    event.stopPropagation()
+    
+    this.http.delete(`${environment.apiUrl}/notifications/${notification.id}`, { headers: this.headers }).subscribe({
+      next: () => {
+        this.taskNotifications = this.taskNotifications.filter(n => n.id !== notification.id)
+        this.updateUnreadCount()
+      },
+      error: (err) => {
+        console.error('Bildirim silinemedi:', err)
+      }
+    })
+  }
+  
+  navigateToTask(notification: any): void {
+    // Ticket notification'ları için ticket sayfasına yönlendir
+    if (notification.relatedTicketId) {
+      const user = this.authService.getUser()
+      const roles = user?.roles || []
+      const isSuperAdmin = roles.includes('SuperAdmin')
+      
+      if (isSuperAdmin) {
+        this.router.navigate(['/ticket-management'])
+      } else {
+        this.router.navigate(['/destek-ticket'], { queryParams: { ticketId: notification.relatedTicketId } })
+      }
+      this.markAsRead(notification)
+    } else if (notification.relatedTaskId) {
+      this.router.navigate(['/task-management'])
+      this.markAsRead(notification)
+    }
+  }
+  
+  trackByNotificationId(index: number, notification: any): any {
+    return notification?.id || index
   }
   
   async checkMicrophonePermission(): Promise<void> {
@@ -126,9 +342,6 @@ export class TopbarComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnDestroy(): void {
-    this.stopListening()
-  }
 
   toggleListening(): void {
     if (this.isListening) {
@@ -213,33 +426,50 @@ export class TopbarComponent implements OnInit, OnDestroy {
         this.microphonePermission = 'granted'
         this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
         const source = this.audioContext.createMediaStreamSource(this.mediaStream)
-        this.processor = this.audioContext.createScriptProcessor(2048, 1, 1)
+        
+        // Modern AnalyserNode kullan (ScriptProcessorNode yerine)
+        this.analyser = this.audioContext.createAnalyser()
+        this.analyser.fftSize = 2048
+        this.analyser.smoothingTimeConstant = 0.8
+        source.connect(this.analyser)
 
         // Sample rate gönder
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
           this.ws.send(JSON.stringify({ type: 'config', sr: this.audioContext.sampleRate }))
         }
 
-        // Ses işleme
-        this.processor.onaudioprocess = (e) => {
+        // Ses işleme - requestAnimationFrame ile modern yaklaşım
+        const bufferLength = this.analyser.frequencyBinCount
+        const dataArray = new Float32Array(bufferLength)
+        
+        const processAudio = () => {
+          if (!this.isListening || !this.analyser || !this.audioContext) {
+            return
+          }
+          
           // WebSocket durumunu kontrol et
           if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-            return; // WebSocket kapalıysa veri gönderme
+            this.animationFrameId = requestAnimationFrame(processAudio)
+            return
           }
           
           try {
-            const input = e.inputBuffer.getChannelData(0)
-            const buf = new Float32Array(input.length)
-            buf.set(input)
-            this.ws.send(buf.buffer)
+            // Ses verilerini al
+            this.analyser.getFloatTimeDomainData(dataArray)
+            // WebSocket'e gönder
+            this.ws.send(dataArray.buffer)
           } catch (err) {
             console.error('Audio data send error:', err)
             this.stopListening()
+            return
           }
+          
+          // Bir sonraki frame için devam et
+          this.animationFrameId = requestAnimationFrame(processAudio)
         }
-
-        source.connect(this.processor)
-        this.processor.connect(this.audioContext.destination)
+        
+        // Ses işlemeyi başlat
+        this.animationFrameId = requestAnimationFrame(processAudio)
         this.isListening = true
       } catch (err: any) {
         console.error('Mikrofon erişimi hatası:', err)
@@ -276,22 +506,38 @@ export class TopbarComponent implements OnInit, OnDestroy {
 
   stopListening(): void {
     console.log('Dinleme durduruluyor...')
-    if (this.processor) {
-      this.processor.disconnect()
-      this.processor = null
+    
+    // Animation frame'i iptal et
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId)
+      this.animationFrameId = null
     }
+    
+    // Analyser'ı temizle
+    if (this.analyser) {
+      this.analyser.disconnect()
+      this.analyser = null
+    }
+    
+    // Audio context'i kapat
     if (this.audioContext) {
       this.audioContext.close()
       this.audioContext = null
     }
+    
+    // Media stream'i durdur
     if (this.mediaStream) {
       this.mediaStream.getTracks().forEach(track => track.stop())
       this.mediaStream = null
     }
+    
+    // WebSocket'i kapat
     if (this.ws) {
       this.ws.close()
       this.ws = null
     }
+    
+    // Speech recognition'ı durdur
     if (this.recognition) {
       try {
         this.recognition.stop()
@@ -300,6 +546,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
       }
       this.recognition = null
     }
+    
     this.isListening = false
     this.currentSpeaker = null
     console.log('Dinleme durduruldu.')
@@ -316,14 +563,19 @@ export class TopbarComponent implements OnInit, OnDestroy {
     for (const cmd of commands) {
       // Fiş başlat komutları
       if (cmd.includes('başlat') || cmd.includes('baslat') || cmd.includes('fiş başlat') || cmd.includes('fis baslat')) {
+        // ÖNEMLİ: Sadece tanınan kullanıcılar fiş başlatabilir
+        if (!this.currentSpeaker) {
+          console.log('✗ Konuşan kişi tanınmadı, fiş başlatılamaz')
+          this.addVoiceNotification('Sistem', '⚠️ Konuşan kişi tanınmadı! Lütfen ses kaydınızı ekleyin.')
+          continue
+        }
+        
         this.isReceiptMode = true
         this.receiptItems = []
         console.log('✓ Fiş modu başlatıldı')
         
         // Bildirim ekle
-        if (this.currentSpeaker) {
-          this.addVoiceNotification(this.currentSpeaker, 'başlattı')
-        }
+        this.addVoiceNotification(this.currentSpeaker, 'başlattı')
         
         continue
       }
@@ -339,6 +591,13 @@ export class TopbarComponent implements OnInit, OnDestroy {
         }
         
         console.log('Yazdır komutu alındı, receipt items:', this.receiptItems)
+        
+        // ÖNEMLİ: Sadece tanınan kullanıcılar fiş kesebilir
+        if (!this.currentSpeaker) {
+          console.log('✗ Konuşan kişi tanınmadı, fiş kesilemez')
+          this.addVoiceNotification('Sistem', '⚠️ Konuşan kişi tanınmadı! Lütfen ses kaydınızı ekleyin.')
+          continue
+        }
         
         if (this.isReceiptMode && this.receiptItems.length > 0) {
           this.lastPrintTime = now
@@ -370,8 +629,15 @@ export class TopbarComponent implements OnInit, OnDestroy {
         continue
       }
 
-      // Fiş modu aktifse ürün ekleme
+      // Fiş modu aktifse ürün ekleme - Sadece tanınan kullanıcılar ürün ekleyebilir
       if (this.isReceiptMode) {
+        // ÖNEMLİ: Sadece tanınan kullanıcılar ürün ekleyebilir
+        if (!this.currentSpeaker) {
+          console.log('✗ Konuşan kişi tanınmadı, ürün eklenemez')
+          this.addVoiceNotification('Sistem', '⚠️ Konuşan kişi tanınmadı! Lütfen ses kaydınızı ekleyin.')
+          continue
+        }
+        
         if (cmd.trim().length > 5) {
           console.log('Parsing product from text:', cmd)
           this.parseProductFromVoice(cmd).catch(err => {
@@ -487,7 +753,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
       const now = Date.now()
       if (this.productCache.length === 0 || (now - this.productCacheTime) > this.PRODUCT_CACHE_TTL) {
         console.log('Loading products from API...')
-        const response = await fetch('http://localhost:5000/api/v1/products', {
+        const response = await fetch(`${environment.apiUrl}/products`, {
           headers: { 'Authorization': `Bearer ${this.authService.getToken()}` }
         })
         this.productCache = await response.json()
@@ -509,6 +775,60 @@ export class TopbarComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Speaker ismini kullanıcı ID'sine çevir
+   * Örnek: "Erdem Yalçınkaya" -> firstName: "Erdem", lastName: "Yalçınkaya" olan kullanıcının ID'si
+   */
+  private async getUserIdFromSpeakerName(speakerName: string): Promise<number | null> {
+    try {
+      // Cache kontrolü
+      const now = Date.now()
+      if (this.userCache.length === 0 || (now - this.userCacheTime) > this.USER_CACHE_TTL) {
+        console.log('Loading users from API...')
+        const response = await fetch(`${environment.apiUrl}/users`, {
+          headers: { 'Authorization': `Bearer ${this.authService.getToken()}` }
+        })
+        if (!response.ok) {
+          console.error('Failed to load users:', response.status)
+          return null
+        }
+        this.userCache = await response.json()
+        this.userCacheTime = now
+      }
+      
+      // Speaker ismini parçala (örn: "Erdem Yalçınkaya" -> ["Erdem", "Yalçınkaya"])
+      const nameParts = speakerName.trim().split(/\s+/)
+      if (nameParts.length < 2) {
+        // Tek kelime ise, firstName veya lastName ile eşleştirmeyi dene
+        const searchName = speakerName.toLowerCase().trim()
+        const found = this.userCache.find((u: any) => {
+          const firstName = (u.firstName || '').toLowerCase().trim()
+          const lastName = (u.lastName || '').toLowerCase().trim()
+          return firstName === searchName || lastName === searchName
+        })
+        return found ? found.id : null
+      }
+      
+      // İlk kelime firstName, geri kalanı lastName olarak kabul et
+      const firstName = nameParts[0].trim()
+      const lastName = nameParts.slice(1).join(' ').trim()
+      
+      // Kullanıcıyı bul - firstName ve lastName eşleşmesi
+      const found = this.userCache.find((u: any) => {
+        const uFirstName = (u.firstName || '').trim()
+        const uLastName = (u.lastName || '').trim()
+        // Tam eşleşme veya kısmi eşleşme (büyük/küçük harf duyarsız)
+        return uFirstName.toLowerCase() === firstName.toLowerCase() && 
+               uLastName.toLowerCase() === lastName.toLowerCase()
+      })
+      
+      return found ? found.id : null
+    } catch (error) {
+      console.error('Speaker to user ID conversion error:', error)
+      return null
+    }
+  }
+
   async printReceipt(items: any[]): Promise<void> {
     try {
       console.log('printReceipt çağrıldı, items:', items)
@@ -518,7 +838,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
       
       // HIZLANDIRMA: Gateway üzerinden ürün fiyatlarını paralel çek
       this.addVoiceNotification('Sistem', 'Ürün bilgileri alınıyor...')
-      const urunler = await fetch('http://localhost:5000/api/v1/products', {
+      const urunler = await fetch(`${environment.apiUrl}/products`, {
         headers: { 'Authorization': `Bearer ${this.authService.getToken()}` }
       }).then(r => r.json())
       
@@ -541,17 +861,32 @@ export class TopbarComponent implements OnInit, OnDestroy {
       
       // Get user info for TenantId and UserId
       const user = this.authService.getUser()
+      
+      // ÖNEMLİ: Sadece veritabanında tanımlı kullanıcılar fiş kesebilir
+      if (!this.currentSpeaker) {
+        throw new Error('Konuşan kişi tanınmadı! Fiş kesilemez.')
+      }
+      
+      // Speaker'ın kullanıcı ID'sini bul
+      const speakerUserId = await this.getUserIdFromSpeakerName(this.currentSpeaker)
+      if (!speakerUserId) {
+        throw new Error(`"${this.currentSpeaker}" veritabanında bulunamadı! Lütfen ses kaydınızı ekleyin.`)
+      }
+      
+      console.log(`✓ Speaker "${this.currentSpeaker}" için kullanıcı ID: ${speakerUserId}`)
+      this.addVoiceNotification('Sistem', `Fiş "${this.currentSpeaker}" adına kesiliyor`)
+      
       const receiptData = { 
         Items: enrichedItems,
         TenantId: user?.tenantId || 1,  // Default to 1 if not set
-        UserId: user?.id || 1
+        UserId: speakerUserId
       }
 
       // Notification: Fiş oluşturuluyor
       this.addVoiceNotification('Sistem', 'Fiş oluşturuluyor...')
 
       // Backend API'ye istek at - Gateway üzerinden
-      const printResponse = await fetch('http://localhost:5000/api/v1/receipt/print', {
+      const printResponse = await fetch(`${environment.apiUrl}/receipt/print`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

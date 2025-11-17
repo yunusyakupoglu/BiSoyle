@@ -15,6 +15,9 @@ import { Store } from '@ngrx/store'
 import { getSidebarsize } from '@/app/store/layout/layout-selector'
 import { basePath } from '@/app/common/constants'
 import { AuthService } from '@/app/services/auth.service'
+import { HttpClient, HttpHeaders } from '@angular/common/http'
+import { environment } from '../../../environments/environment'
+import { OnDestroy } from '@angular/core'
 
 @Component({
   selector: 'app-sidebar',
@@ -28,16 +31,32 @@ import { AuthService } from '@/app/services/auth.service'
     LogoBoxComponent,
   ],
   templateUrl: './sidebar.component.html',
-  styles: ``,
+  styles: `
+    .nav-icon iconify-icon {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      min-width: 20px;
+      min-height: 20px;
+    }
+    .nav-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+  `,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnDestroy {
   menuItems: MenuItem[] = []
   activeMenuItems: string[] = []
+  unreadAnnouncementCount = 0
+  private announcementPollInterval: any = null
 
   store = inject(Store)
   router = inject(Router)
   authService = inject(AuthService)
+  http = inject(HttpClient)
   trimmedURL = this.router.url?.replaceAll(
     basePath !== '' ? basePath + '/' : '',
     '/'
@@ -50,6 +69,8 @@ export class SidebarComponent {
           basePath !== '' ? basePath + '/' : '',
           '/'
         )
+        // Menüyü yeniden yükle (kullanıcı bilgisi güncellenmiş olabilir)
+        this.initMenu()
         this._activateMenu()
         setTimeout(() => {
           this.scrollToActive()
@@ -59,23 +80,148 @@ export class SidebarComponent {
   }
 
   ngOnInit(): void {
-    this.initMenu()
+    // Kullanıcı bilgisi yüklenene kadar bekle
+    const user = this.authService.getUser()
+    if (user && user.roles) {
+      this.initMenu()
+      this.loadUnreadAnnouncementCount()
+      this.startAnnouncementPolling()
+    } else {
+      // Kullanıcı bilgisi henüz yüklenmemişse, kısa bir süre bekle
+      setTimeout(() => {
+        this.initMenu()
+        this.loadUnreadAnnouncementCount()
+        this.startAnnouncementPolling()
+      }, 100)
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.announcementPollInterval) {
+      clearInterval(this.announcementPollInterval)
+    }
+  }
+
+  get headers() {
+    const token = this.authService.getToken()
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    })
+  }
+
+  loadUnreadAnnouncementCount(): void {
+    const user = this.authService.getUser()
+    if (!user || !user.id) return
+
+    const roles = user?.roles || []
+    const isAdmin = roles.includes('Admin') || roles.includes('SuperAdmin')
+    if (!isAdmin) return // Sadece Admin ve SuperAdmin için
+
+    const tenantId = user?.tenantId
+    const params = new URLSearchParams()
+    params.append('userId', user.id.toString())
+    if (tenantId) {
+      params.append('tenantId', tenantId.toString())
+    }
+
+    this.http.get<{ count: number }>(`${environment.apiUrl}/announcements/unread-count?${params.toString()}`, { headers: this.headers }).subscribe({
+      next: (data) => {
+        this.unreadAnnouncementCount = data?.count || 0
+        this.updateMenuBadge()
+      },
+      error: (err) => {
+        // Sadece 500 hatası değilse log'la
+        if (err.status !== 500) {
+          console.error('Okunmamış duyuru sayısı yüklenemedi:', err)
+        }
+        // Hata durumunda mevcut count'u koru
+      }
+    })
+  }
+
+  updateMenuBadge(): void {
+    const duyurularItem = this.menuItems.find(item => item.key === 'duyurular')
+    if (duyurularItem) {
+      if (this.unreadAnnouncementCount > 0) {
+        duyurularItem.badge = {
+          variant: 'danger',
+          text: this.unreadAnnouncementCount.toString()
+        }
+      } else {
+        duyurularItem.badge = undefined
+      }
+    }
+  }
+
+  startAnnouncementPolling(): void {
+    // Her 60 saniyede bir kontrol et (30 saniyeden 60 saniyeye çıkarıldı)
+    this.announcementPollInterval = setInterval(() => {
+      this.loadUnreadAnnouncementCount()
+    }, 60000)
   }
 
   initMenu(): void {
     const user = this.authService.getUser()
-    const userRoles = user?.roles || []
+    const userRoles = (user?.roles || []).map((r: string) => r?.toLowerCase() || '')
     
-    // Rollere göre menüyü filtrele
+    // Debug: Tüm menü öğelerini ve kullanıcı rollerini logla
+    console.log('=== MENU DEBUG ===')
+    console.log('All menu items:', MENU.map(item => ({ key: item.key, label: item.label, roles: item.roles })))
+    console.log('User roles (lowercase):', userRoles)
+    console.log('User object:', user)
+    
+    // SuperAdmin kontrolü: SADECE rol ile belirlenir (case-insensitive)
+    const isSuperAdmin = userRoles.includes('superadmin')
+    
+    // Rollere göre menüyü filtrele (case-insensitive)
     this.menuItems = MENU.filter((item: MenuItem) => {
       // Eğer item'da roles tanımlanmamışsa, herkese göster
       if (!item.roles || item.roles.length === 0) {
         return true
       }
       
+      // Item rollerini lowercase'e çevir
+      const itemRoles = item.roles.map(r => r?.toLowerCase() || '')
+      
+      // SuperAdmin için özel kontrol
+      if (itemRoles.includes('superadmin')) {
+        const result = isSuperAdmin
+        if (item.key === 'email-superadmin' || item.key === 'email') {
+          console.log(`SuperAdmin check for ${item.key}:`, { isSuperAdmin, result, itemRoles, userRoles })
+        }
+        return result
+      }
+      
       // Kullanıcının rollerinden herhangi biri item'ın rollerinde varsa göster
-      return item.roles.some((role: string) => userRoles.includes(role))
+      const hasAccess = itemRoles.some((role: string) => userRoles.includes(role))
+      
+      // Debug: Her item için kontrol sonucunu logla
+      if (item.key === 'giderler' || item.key === 'email' || item.key === 'email-superadmin' || item.key === 'ticket-management' || item.key === 'ticket-management-superadmin') {
+        console.log(`${item.key} item check:`, {
+          itemRoles,
+          userRoles,
+          hasAccess,
+          isSuperAdmin,
+          item: { key: item.key, label: item.label, roles: item.roles }
+        })
+      }
+      
+      return hasAccess
     })
+    
+    // Debug: Filtrelenmiş menü öğelerini console'a yazdır
+    console.log('Filtered menu items:', this.menuItems.map(item => ({ key: item.key, label: item.label, roles: item.roles })))
+    console.log('Giderler in filtered menu?', this.menuItems.some(item => item.key === 'giderler'))
+    console.log('Email in filtered menu?', this.menuItems.some(item => item.key === 'email'))
+    console.log('Email-superadmin in filtered menu?', this.menuItems.some(item => item.key === 'email-superadmin'))
+    console.log('Email items count:', this.menuItems.filter(item => item.key === 'email' || item.key === 'email-superadmin').length)
+    console.log('All email items:', this.menuItems.filter(item => item.key === 'email' || item.key === 'email-superadmin'))
+    console.log('Ticket-management in filtered menu?', this.menuItems.some(item => item.key === 'ticket-management' || item.key === 'ticket-management-superadmin'))
+    console.log('Ticket-management items:', this.menuItems.filter(item => item.key === 'ticket-management' || item.key === 'ticket-management-superadmin'))
+    console.log('=== END MENU DEBUG ===')
+    
+    // Badge'leri güncelle
+    this.updateMenuBadge()
   }
 
   ngAfterViewInit() {
@@ -208,8 +354,9 @@ export class SidebarComponent {
       size = 'sm-hover'
     }
     this.store.dispatch(changesidebarsize({ size }))
-    this.store.select(getSidebarsize).subscribe((size) => {
+    this.store.select(getSidebarsize).subscribe((size: string) => {
       document.documentElement.setAttribute('data-menu-size', size)
     })
   }
 }
+

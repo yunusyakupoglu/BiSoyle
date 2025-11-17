@@ -46,7 +46,7 @@ function getUsers(): User[] {
       password: '123456',
       firstName: 'Reback',
       lastName: 'Techzaa',
-      avatar: 'assets/images/users/user-1.jpg',
+      avatar: 'assets/images/profile-man.png',
       location: 'California, USA',
       title: 'Admin Head',
       token: Token,

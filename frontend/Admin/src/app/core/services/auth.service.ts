@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core'
-import { HttpClient } from '@angular/common/http'
+import { HttpClient, HttpHeaders } from '@angular/common/http'
 import { map } from 'rxjs/operators'
 import { Observable } from 'rxjs'
 import { CookieService } from 'ngx-cookie-service'
@@ -19,6 +19,7 @@ export interface User {
 }
 
 export interface LoginResponse {
+  intface?: any
   user: User
   token: string
   refreshToken: string
@@ -27,6 +28,7 @@ export interface LoginResponse {
 @Injectable({ providedIn: 'root' })
 export class AuthenticationService {
   user: User | null = null
+  private apiDto: any
   private apiUrl = environment.apiUrl
 
   public readonly authSessionKey = '_BISOYLE_AUTH_TOKEN_'
@@ -42,30 +44,37 @@ export class AuthenticationService {
   }
 
   login(email: string, password: string): Observable<User> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login`, { email, password }).pipe(
+    const payload = { email: (email || '').trim(), password }
+    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login`, payload).pipe(
       map((response) => {
-        // login successful if there's a jwt token in the response
         if (response && response.token) {
           const user = { ...response.user, token: response.token }
           this.user = user
-          // store user details and jwt token
           this.saveSession(response.token)
           localStorage.setItem(this.userDataKey, JSON.stringify(user))
           localStorage.setItem('_BISOYLE_REFRESH_TOKEN_', response.refreshToken)
+          // Fetch fresh user (ensures correct tenantId/roles)
+          const headers = new HttpHeaders({ Authorization: `Bearer ${response.token}` })
+          this.http.get<User>(`${this.apiUrl}/auth/me`, { headers }).subscribe({
+            next: (fresh) => {
+              const merged = { ...user, ...fresh }
+              localStorage.setItem(this.userDataKey, JSON.stringify(merged))
+            },
+          })
         }
         return response.user
       })
     )
   }
 
-  register(username: string, email: string, password: string, firstName?: string, lastName?: string): Observable<any> {
+  register(username: string, email: string, password: string, firstName?: string, lastName?: string): Promise<any> {
     return this.http.post(`${this.apiUrl}/auth/register`, {
       username,
       email,
       password,
       firstName,
       lastName
-    })
+    }).toPromise()
   }
 
   getCurrentUser(): Observable<User> {

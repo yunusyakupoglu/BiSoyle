@@ -10,6 +10,7 @@ public class TransactionDbContext : DbContext
 
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<TransactionItem> TransactionItems { get; set; }
+    public DbSet<Expense> Expenses { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,6 +42,21 @@ public class TransactionDbContext : DbContext
                   .HasForeignKey(e => e.TransactionId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
+
+        modelBuilder.Entity<Expense>(entity =>
+        {
+            entity.ToTable("expenses");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TenantId).IsRequired();
+            entity.Property(e => e.UserId).IsRequired();
+            entity.HasIndex(e => e.TenantId); // Tenant filter için
+            entity.Property(e => e.GiderAdi).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Tutar).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(e => e.Kategori).HasMaxLength(100);
+            entity.Property(e => e.Aciklama).HasMaxLength(500);
+            entity.Property(e => e.OlusturmaTarihi).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.HasIndex(e => e.OlusturmaTarihi);
+        });
     }
 }
 
@@ -71,6 +87,18 @@ public class TransactionItem
     public decimal Subtotal { get; set; }
     
     public Transaction Transaction { get; set; } = null!;
+}
+
+public class Expense
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; } // Firma ID - izolasyon için
+    public int UserId { get; set; } // Hangi kullanıcı oluşturdu
+    public string GiderAdi { get; set; } = "";
+    public decimal Tutar { get; set; }
+    public string? Kategori { get; set; } // Örn: Kira, Elektrik, Su, Personel, vb.
+    public string? Aciklama { get; set; }
+    public DateTime OlusturmaTarihi { get; set; } = DateTime.UtcNow;
 }
 
 

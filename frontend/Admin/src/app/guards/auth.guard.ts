@@ -11,14 +11,38 @@ export class AuthGuard implements CanActivate {
     private router: Router
   ) {}
 
-  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
-    if (this.authService.isAuthenticated()) {
+  async canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Promise<boolean> {
+    if (!this.authService.isAuthenticated()) {
+      await this.router.navigate(['/auth/login'], { queryParams: { returnUrl: state.url } });
+      return false;
+    }
+
+    if (this.authService.isSuperAdmin()) {
       return true;
     }
 
-    // Giriş yapılmamışsa login sayfasına yönlendir
-    this.router.navigate(['/auth/login'], { queryParams: { returnUrl: state.url } });
-    return false;
+    // Aktivasyondan hemen sonra yerel bayrağı önceliklendir
+    if (this.authService.isLicenseValidated()) {
+      if (state.url.startsWith('/license-activation')) {
+        await this.router.navigate(['/dashboard']);
+        return false;
+      }
+      return true;
+    }
+
+    // Sunucu teyidi (gecikmeli durumlar için)
+    await this.authService.ensureLicenseFlagFromServer();
+
+    if (state.url.startsWith('/license-activation')) {
+      return true;
+    }
+
+    if (!this.authService.isLicenseValidated()) {
+      await this.router.navigate(['/license-activation'], { queryParams: { returnUrl: state.url } });
+      return false;
+    }
+
+    return true;
   }
 }
 

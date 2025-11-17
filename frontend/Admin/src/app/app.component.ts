@@ -11,6 +11,7 @@ import {
 } from '@angular/router'
 import { TitleService } from '@core/services/title.service'
 import { NgProgressbar, NgProgressRef } from 'ngx-progressbar'
+import { LogService } from './services/log.service'
 
 @Component({
   selector: 'app-root',
@@ -24,8 +25,10 @@ export class AppComponent implements OnInit {
 
   private titleService = inject(TitleService)
   private router = inject(Router)
+  private logService = inject(LogService)
 
   constructor() {
+    // Log service'i inject etmek console override'larını aktif eder
     this.router.events.subscribe((event: Event) => {
       this.checkRouteChange(event)
     })

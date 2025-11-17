@@ -22,6 +22,50 @@ namespace BiSoyle.Transaction.Service.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("BiSoyle.Transaction.Service.Data.Expense", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Aciklama")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("GiderAdi")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Kategori")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("OlusturmaTarihi")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Tutar")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OlusturmaTarihi");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("expenses", (string)null);
+                });
+
             modelBuilder.Entity("BiSoyle.Transaction.Service.Data.Transaction", b =>
                 {
                     b.Property<int>("Id")
@@ -57,18 +101,16 @@ namespace BiSoyle.Transaction.Service.Migrations
                     b.Property<int?>("ReceiptId")
                         .HasColumnType("integer");
 
-                    b.Property<decimal>("ToplamTutar")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<int>("TenantId")
                         .HasColumnType("integer");
+
+                    b.Property<decimal>("ToplamTutar")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("IslemKodu");
 
                     b.HasIndex("IslemTipi");
 

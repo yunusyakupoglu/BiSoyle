@@ -1,0 +1,108 @@
+<div class="row justify-content-center">
+  <div class="col-xl-8">
+    <div class="card">
+      <div class="card-header">
+        <h4 class="card-title mb-0">
+          <i class="bx bx-key"></i> Lisans Aktivasyonu
+        </h4>
+      </div>
+      <div class="card-body">
+        @if (success) {
+          <div class="alert alert-success" role="alert">
+            <h5><i class="bx bx-check-circle"></i> Lisans Başarıyla Aktive Edildi!</h5>
+            <p class="mb-0">
+              @if (activationResult) {
+                Maksimum kurulum sayısı: {{ activationResult.maxInstallations }}<br>
+                Mevcut kurulumlar: {{ activationResult.currentInstallations }}
+              }
+            </p>
+            <p class="mt-2 mb-0">Ana sayfaya yönlendiriliyorsunuz...</p>
+          </div>
+        } @else {
+          @if (error) {
+            <div class="alert alert-danger" role="alert">
+              <i class="bx bx-error-circle"></i> {{ error }}
+            </div>
+          }
+
+          <div class="mb-4">
+            <h5>Cihaz Bilgileri</h5>
+            <div class="card bg-light">
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6">
+                    <strong>Device Fingerprint:</strong>
+                    <div class="input-group mt-1">
+                      <input type="text" class="form-control font-monospace" 
+                             [value]="formatFingerprint(deviceFingerprint)" 
+                             readonly>
+                      <button class="btn btn-outline-secondary" 
+                              (click)="copyToClipboard(deviceFingerprint)"
+                              title="Kopyala">
+                        <i class="bx bx-copy"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <strong>Device Name:</strong>
+                    <p class="text-muted mb-0 small">{{ getDeviceInfo() }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card border-primary mb-3">
+            <div class="card-body">
+              <h6 class="card-title">Lisans Anahtarı</h6>
+              <div class="mb-3">
+                <label class="form-label">Lisans Anahtarını Girin</label>
+                <input
+                  type="text"
+                  class="form-control font-monospace"
+                  [(ngModel)]="licenseKey"
+                  placeholder="XXXX-XXXX-XXXX-XXXX"
+                  maxlength="19"
+                />
+                <small class="text-muted">Abonelik atandığında e-posta ile gönderilen lisans anahtarını girin.</small>
+              </div>
+
+              <div class="alert alert-info">
+                <i class="bx bx-info-circle"></i>
+                Lisans JSON ve imza bilgileri anahtara göre otomatik olarak alınır; ekstra dosya yüklemeniz gerekmez.
+              </div>
+
+              <button
+                class="btn btn-primary"
+                (click)="fetchLicenseFromServer()"
+                [disabled]="loading || !licenseKey"
+              >
+                @if (loading) {
+                  <span class="spinner-border spinner-border-sm me-1"></span>
+                }
+                Lisansı Doğrula ve Aktive Et
+              </button>
+
+              @if (licenseDetails) {
+                <div class="alert alert-secondary mt-3 mb-0">
+                  <h6 class="alert-heading mb-2">
+                    <i class="bx bx-receipt"></i> Lisans Bilgileri
+                  </h6>
+                  <p class="mb-1"><strong>Firma:</strong> {{ licenseDetails?.tenantName }}</p>
+                  <p class="mb-1">
+                    <strong>Paket:</strong> {{ licenseDetails?.package }} |
+                    <strong>Maksimum Kurulum:</strong> {{ licenseDetails?.maxInstallations }}
+                  </p>
+                  <p class="mb-0 text-muted small">
+                    Lisans JSON ve imza otomatik olarak yüklendi. Aktivasyon birkaç saniye içinde tamamlanacaktır.
+                  </p>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+

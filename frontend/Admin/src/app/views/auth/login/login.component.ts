@@ -1,14 +1,13 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
-import { LogoBoxComponent } from 'src/app/components/logo-box.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, LogoBoxComponent],
+  imports: [CommonModule, FormsModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
@@ -23,9 +22,22 @@ export class LoginComponent {
     private authService: AuthService,
     private router: Router
   ) {
-    // Eğer zaten giriş yapmışsa ana sayfaya yönlendir
+    // Eğer zaten giriş yapmışsa kontrol et
     if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/speakerid']);
+      this.handleAlreadyLoggedIn();
+    }
+  }
+
+  async handleAlreadyLoggedIn(): Promise<void> {
+    const user = this.authService.getUser();
+    const isSuperAdmin = this.authService.isSuperAdmin();
+    await this.authService.ensureLicenseFlagFromServer();
+    const licenseValidated = this.authService.isLicenseValidated();
+
+    if (isSuperAdmin || licenseValidated) {
+      this.router.navigate(['/dashboard']);
+    } else {
+      this.router.navigate(['/license-activation']);
     }
   }
 
@@ -42,10 +54,25 @@ export class LoginComponent {
       email: this.kullaniciAdi,
       password: this.parola
     }).subscribe({
-      next: (response) => {
+      next: async (response) => {
         this.yukleniyor = false;
-        // Login başarılı, Speaker ID sayfasına yönlendir
-        this.router.navigate(['/speakerid']);
+        
+        // Kullanıcı bilgilerini kontrol et
+        const user = response.user;
+        const isSuperAdmin = !user.tenantId || user.tenantId === 0 || 
+                           (user.roles && user.roles.includes('SuperAdmin'));
+        await this.authService.ensureLicenseFlagFromServer();
+        const licenseValidated = this.authService.isLicenseValidated();
+        
+        // SuperAdmin değilse ve lisans doğrulanmamışsa license activation'a yönlendir
+        if (!isSuperAdmin && !licenseValidated) {
+          // License activation sayfasına yönlendir (device binding ile tam aktivasyon)
+          this.router.navigate(['/license-activation']);
+          return;
+        }
+        
+        // SuperAdmin veya lisans doğrulanmışsa dashboard'a yönlendir
+        this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         this.yukleniyor = false;

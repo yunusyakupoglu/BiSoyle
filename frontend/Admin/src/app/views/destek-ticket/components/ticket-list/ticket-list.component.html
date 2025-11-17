@@ -1,0 +1,104 @@
+<div class="tab-content pt-0 flex-grow-1 d-flex flex-column overflow-hidden" id="ticket-tabContent" style="min-height: 0; height: 100%;">
+  <div
+    class="tab-pane fade active show flex-grow-1 d-flex flex-column overflow-hidden"
+    id="ticket-list"
+    role="tabpanel"
+    style="min-height: 0; height: 100%;"
+  >
+    <div *ngIf="loading" class="text-center py-5 flex-grow-1 d-flex align-items-center justify-content-center" style="min-height: 0;">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Yükleniyor...</span>
+      </div>
+    </div>
+    
+    <div *ngIf="!loading && error" class="alert alert-danger m-3">{{ error }}</div>
+    
+    <div *ngIf="!loading && !error && getFilteredTickets().length === 0" class="text-center py-5 flex-grow-1 d-flex flex-column align-items-center justify-content-center" style="min-height: 0;">
+      <i class="mdi mdi-ticket-outline fs-1 text-muted"></i>
+      <p class="text-muted mt-2 mb-0">Bu durumda ticket bulunmuyor.</p>
+    </div>
+    
+    <ul class="message-list mb-0 flex-grow-1 overflow-auto" *ngIf="!loading && !error && getFilteredTickets().length > 0" style="min-height: 0; height: 100%;">
+      <li *ngFor="let ticket of getPaginatedTickets(); trackBy: trackByTicketId" 
+          [class.active]="selectedTicket?.id === ticket.id"
+          (click)="openDetail(ticket)"
+          style="cursor: pointer;">
+        <div class="col-mail col-mail-1">
+          <div class="checkbox-wrapper-mail">
+            <input type="checkbox" [id]="'ticket-' + ticket.id" />
+            <label [for]="'ticket-' + ticket.id" class="toggle"></label>
+          </div>
+          <span
+            class="star-toggle"
+            [ngClass]="
+              ticket.isStarred ? 'bx bxs-star text-warning' : 'bx bx-star'
+            "
+            (click)="toggleStar(ticket, $event)"
+            style="cursor: pointer;"
+          ></span>
+          <span
+            class="bx important-toggle"
+            [ngClass]="
+              ticket.isImportant ? 'bxs-tag-alt text-warning' : 'bx-tag-alt'
+            "
+            (click)="toggleImportant(ticket, $event)"
+            style="cursor: pointer;"
+          ></span>
+          <div class="ticket-content-left flex-grow-1 d-flex align-items-center">
+            <a
+              (click)="openDetail(ticket)"
+              href="javascript:void(0);"
+              class="title fw-bold"
+              style="text-decoration: none; color: inherit;"
+              >{{ ticket.title }}</a
+            >
+          </div>
+        </div>
+        <div class="col-mail col-mail-2">
+          <div class="ticket-meta-right d-flex align-items-center gap-2">
+            <span *ngIf="ticket.tenantName || ticket.tenantId" class="badge bg-primary text-white">
+              <i class="mdi mdi-office-building me-1"></i>{{ ticket.tenantName || ('Firma ' + ticket.tenantId) }}
+            </span>
+            <span class="badge priority-badge {{ getPriorityColor(ticket.priority) }}">
+              {{ ticket.priority }}
+            </span>
+            <span class="date">{{ ticket.createdDate | date:'dd.MM.yyyy' }}</span>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="px-3 py-2 mt-auto">
+  <div class="d-flex align-items-center justify-content-between">
+    <div class="">
+      <span *ngIf="getTotalPages() > 0">
+        Showing {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, totalItems) }} of {{ totalItems }}
+      </span>
+      <span *ngIf="getTotalPages() === 0">
+        Toplam {{ totalItems }} ticket
+      </span>
+    </div>
+    <div class="btn-group" *ngIf="getTotalPages() > 1">
+      <button 
+        type="button" 
+        class="btn btn-light btn-sm"
+        (click)="previousPage()"
+        [disabled]="currentPage === 1"
+      >
+        <i class="bx bx-chevron-left"></i>
+      </button>
+      <button 
+        type="button" 
+        class="btn btn-primary btn-sm"
+        (click)="nextPage()"
+        [disabled]="currentPage === getTotalPages()"
+      >
+        <i class="bx bx-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+

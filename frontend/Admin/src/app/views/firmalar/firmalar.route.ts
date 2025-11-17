@@ -12,3 +12,26 @@ export const FIRMALAR_ROUTES: Route[] = [
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -30,11 +30,29 @@ builder.Services.AddDbContext<ProductDbContext>(options =>
 // Device Discovery Service
 builder.Services.AddSingleton<DeviceDiscoveryService>();
 
+// CORS - Güvenli CORS ayarları
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+        if (builder.Environment.IsDevelopment())
+        {
+            // Development: Frontend (Angular) ve diğer local servislere izin
+            policy.WithOrigins("http://localhost:4200", "http://localhost:3000", "http://127.0.0.1:4200")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials();
+        }
+        else
+        {
+            // Production: Sadece belirtilen origin'lere izin
+            var allowedOrigins = builder.Configuration["AllowedOrigins"]?.Split(',') 
+                ?? new[] { "http://localhost:4200" };
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials();
+        }
     });
 });
 
@@ -63,12 +81,14 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowAll");
 
 // Get all products
-app.MapGet("/api/products", async (ProductDbContext dbContext, bool? aktif) =>
+app.MapGet("/api/products", async (ProductDbContext dbContext, bool? aktif, int? tenantId) =>
 {
     var query = dbContext.Products.AsQueryable();
     
     if (aktif.HasValue)
         query = query.Where(p => p.Aktif == aktif.Value);
+    if (tenantId.HasValue)
+        query = query.Where(p => p.TenantId == tenantId.Value);
     
     var products = await query.OrderBy(p => p.UrunAdi).ToListAsync();
     return Results.Ok(products);
@@ -88,31 +108,104 @@ app.MapGet("/api/products/{id}", async (int id, ProductDbContext dbContext) =>
 // Create product
 app.MapPost("/api/products", async (Product product, ProductDbContext dbContext) =>
 {
-    product.OlusturmaTarihi = DateTime.UtcNow;
-    dbContext.Products.Add(product);
-    await dbContext.SaveChangesAsync();
+    // Null check
+    if (product == null)
+    {
+        return Results.BadRequest(new { detail = "Ürün verisi boş!" });
+    }
     
-    return Results.Created($"/api/products/{product.Id}", product);
+    // Validation
+    if (string.IsNullOrWhiteSpace(product.UrunAdi))
+    {
+        return Results.BadRequest(new { detail = "Ürün adı gerekli!" });
+    }
+    
+    if (product.TenantId <= 0)
+    {
+        return Results.BadRequest(new { detail = "Geçersiz TenantId!" });
+    }
+    
+    if (product.BirimFiyat < 0)
+    {
+        return Results.BadRequest(new { detail = "Birim fiyat negatif olamaz!" });
+    }
+    
+    try
+    {
+        product.OlusturmaTarihi = DateTime.UtcNow;
+        dbContext.Products.Add(product);
+        await dbContext.SaveChangesAsync();
+        
+        return Results.Created($"/api/products/{product.Id}", product);
+    }
+    catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+    {
+        var innerMessage = ex.InnerException?.Message ?? ex.Message;
+        if (innerMessage.Contains("duplicate") || innerMessage.Contains("unique"))
+        {
+            return Results.Conflict(new { detail = "Bu ürün adı zaten kullanılıyor!" });
+        }
+        return Results.Problem($"Veritabanı hatası: {innerMessage}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Product create error: {ex.Message}");
+        return Results.Problem($"Ürün oluşturma hatası: {ex.Message}");
+    }
 });
 
 // Update product
 app.MapPut("/api/products/{id}", async (int id, Product updatedProduct, ProductDbContext dbContext) =>
 {
-    var product = await dbContext.Products.FindAsync(id);
+    // Null check
+    if (updatedProduct == null)
+    {
+        return Results.BadRequest(new { detail = "Ürün verisi boş!" });
+    }
     
-    if (product == null)
-        return Results.NotFound(new { message = "Ürün bulunamadı" });
+    // Validation
+    if (string.IsNullOrWhiteSpace(updatedProduct.UrunAdi))
+    {
+        return Results.BadRequest(new { detail = "Ürün adı gerekli!" });
+    }
     
-    product.UrunAdi = updatedProduct.UrunAdi;
-    product.BirimFiyat = updatedProduct.BirimFiyat;
-    product.OlcuBirimi = updatedProduct.OlcuBirimi;
-    product.StokMiktari = updatedProduct.StokMiktari;
-    product.Aktif = updatedProduct.Aktif;
-    product.GuncellemeTarihi = DateTime.UtcNow;
+    if (updatedProduct.BirimFiyat < 0)
+    {
+        return Results.BadRequest(new { detail = "Birim fiyat negatif olamaz!" });
+    }
     
-    await dbContext.SaveChangesAsync();
-    
-    return Results.Ok(product);
+    try
+    {
+        var product = await dbContext.Products.FindAsync(id);
+        
+        if (product == null)
+            return Results.NotFound(new { message = "Ürün bulunamadı" });
+        
+        product.UrunAdi = updatedProduct.UrunAdi;
+        product.BirimFiyat = updatedProduct.BirimFiyat;
+        product.OlcuBirimi = updatedProduct.OlcuBirimi ?? "Adet";
+        product.StokMiktari = updatedProduct.StokMiktari;
+        product.Aktif = updatedProduct.Aktif;
+        product.GuncellemeTarihi = DateTime.UtcNow;
+        
+        await dbContext.SaveChangesAsync();
+        
+        return Results.Ok(product);
+    }
+    catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+    {
+        var innerMessage = ex.InnerException?.Message ?? ex.Message;
+        if (innerMessage.Contains("duplicate") || innerMessage.Contains("unique"))
+        {
+            return Results.Conflict(new { detail = "Bu ürün adı zaten kullanılıyor!" });
+        }
+        return Results.Problem($"Veritabanı hatası: {innerMessage}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Product update error: {ex.Message}");
+        return Results.Problem($"Ürün güncelleme hatası: {ex.Message}");
+    }
 });
 
 // Toggle product active status
@@ -130,7 +223,7 @@ app.MapPut("/api/products/{id}/toggle-active", async (int id, ProductDbContext d
     return Results.Ok(new { message = $"Ürün {(product.Aktif ? "aktif" : "pasif")} edildi", aktif = product.Aktif });
 });
 
-// Delete product (soft delete)
+// Delete product (hard delete)
 app.MapDelete("/api/products/{id}", async (int id, ProductDbContext dbContext) =>
 {
     var product = await dbContext.Products.FindAsync(id);
@@ -138,21 +231,21 @@ app.MapDelete("/api/products/{id}", async (int id, ProductDbContext dbContext) =
     if (product == null)
         return Results.NotFound(new { message = "Ürün bulunamadı" });
     
-    // Soft delete
-    product.Aktif = false;
-    product.GuncellemeTarihi = DateTime.UtcNow;
+    dbContext.Products.Remove(product);
     await dbContext.SaveChangesAsync();
     
-    return Results.Ok(new { message = "Ürün silindi (deaktif edildi)", id });
+    return Results.Ok(new { message = "Ürün kalıcı olarak silindi", id });
 });
 
 // Get all categories
-app.MapGet("/api/categories", async (ProductDbContext dbContext, bool? aktif) =>
+app.MapGet("/api/categories", async (ProductDbContext dbContext, bool? aktif, int? tenantId) =>
 {
     var query = dbContext.Categories.AsQueryable();
     
     if (aktif.HasValue)
         query = query.Where(c => c.Aktif == aktif.Value);
+    if (tenantId.HasValue)
+        query = query.Where(c => c.TenantId == tenantId.Value);
     
     var categories = await query.OrderBy(c => c.KategoriAdi).ToListAsync();
     return Results.Ok(categories);
@@ -209,7 +302,7 @@ app.MapPut("/api/categories/{id}/toggle-active", async (int id, ProductDbContext
     return Results.Ok(new { message = $"Kategori {(category.Aktif ? "aktif" : "pasif")} edildi", aktif = category.Aktif });
 });
 
-// Delete category (soft delete)
+// Delete category (hard delete)
 app.MapDelete("/api/categories/{id}", async (int id, ProductDbContext dbContext) =>
 {
     var category = await dbContext.Categories.FindAsync(id);
@@ -223,15 +316,14 @@ app.MapDelete("/api/categories/{id}", async (int id, ProductDbContext dbContext)
     if (hasProducts)
         return Results.BadRequest(new { message = "Bu kategori kullanımda, silinemez. Pasif edebilirsiniz." });
     
-    // Soft delete
-    category.Aktif = false;
+    dbContext.Categories.Remove(category);
     await dbContext.SaveChangesAsync();
     
-    return Results.Ok(new { message = "Kategori silindi (deaktif edildi)", id });
+    return Results.Ok(new { message = "Kategori kalıcı olarak silindi", id });
 });
 
-// Get all unit of measures
-app.MapGet("/api/unit-of-measures", async (ProductDbContext dbContext, bool? aktif) =>
+// Get all unit of measures (global). Accept tenantId for API symmetry (ignored).
+app.MapGet("/api/unit-of-measures", async (ProductDbContext dbContext, bool? aktif, int? tenantId) =>
 {
     var query = dbContext.UnitOfMeasures.AsQueryable();
     
@@ -294,7 +386,7 @@ app.MapPut("/api/unit-of-measures/{id}/toggle-active", async (int id, ProductDbC
     return Results.Ok(new { message = $"Ölçü birimi {(unit.Aktif ? "aktif" : "pasif")} edildi", aktif = unit.Aktif });
 });
 
-// Delete unit of measure (soft delete)
+// Delete unit of measure (hard delete)
 app.MapDelete("/api/unit-of-measures/{id}", async (int id, ProductDbContext dbContext) =>
 {
     var unit = await dbContext.UnitOfMeasures.FindAsync(id);
@@ -308,11 +400,10 @@ app.MapDelete("/api/unit-of-measures/{id}", async (int id, ProductDbContext dbCo
     if (hasProducts)
         return Results.BadRequest(new { message = "Bu ölçü birimi kullanımda, silinemez. Pasif edebilirsiniz." });
     
-    // Soft delete
-    unit.Aktif = false;
+    dbContext.UnitOfMeasures.Remove(unit);
     await dbContext.SaveChangesAsync();
     
-    return Results.Ok(new { message = "Ölçü birimi silindi (deaktif edildi)", id });
+    return Results.Ok(new { message = "Ölçü birimi kalıcı olarak silindi", id });
 });
 
 // =====================================================
@@ -393,15 +484,15 @@ app.MapPut("/api/devices/{id}/toggle-status", async (int id, ProductDbContext db
     return Results.Ok(new { message = $"Cihaz {device.Durum} edildi", device });
 });
 
-// Delete device
+// Delete device (hard delete)
 app.MapDelete("/api/devices/{id}", async (int id, ProductDbContext dbContext) =>
 {
     var device = await dbContext.Devices.FindAsync(id);
     if (device is null) return Results.NotFound(new { message = "Cihaz bulunamadı" });
 
-    device.Durum = "pasif";
+    dbContext.Devices.Remove(device);
     await dbContext.SaveChangesAsync();
-    return Results.Ok(new { message = "Cihaz pasif edildi", id });
+    return Results.Ok(new { message = "Cihaz kalıcı olarak silindi", id });
 });
 
 // Discover devices (Otomatik Tarama)

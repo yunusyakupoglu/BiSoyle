@@ -51,7 +51,7 @@
                         <td><strong>#{{ user.id }}</strong></td>
                         <td>
                           <div class="d-flex align-items-center">
-                            <img [src]="user.avatar || 'assets/images/users/avatar-default.jpg'" 
+                            <img [src]="user.avatar || 'assets/images/users/dummy-avatar.jpg'" 
                                  class="rounded-circle me-2" width="32" height="32" alt="Avatar">
                             <div>
                               <strong class="d-block">{{ user.firstName }} {{ user.lastName }}</strong>
@@ -89,18 +89,28 @@
                         </td>
                         <td class="text-end">
                           <div class="btn-group" role="group">
-                            <button class="btn btn-sm btn-light" (click)="openEditModal(user)" title="Düzenle">
-                              <i class="bx bx-edit"></i>
+                            <button class="btn btn-sm btn-info d-flex align-items-center justify-content-center"
+                                    (click)="generatePassword(user)"
+                                    [disabled]="generatingPassword[user.id]"
+                                    title="Parola Üret">
+                              @if (generatingPassword[user.id]) {
+                                <i class="bx bx-loader-alt bx-spin"></i>
+                              } @else {
+                                <i class="bx bx-key"></i>
+                              }
+                            </button>
+                            <button class="btn btn-sm btn-light" (click)="openEditModal(user)" title="Kullanıcıyı Düzenle">
+                              <i class="bx bx-edit-alt"></i>
                             </button>
                             <button class="btn btn-sm" 
                                     [class.btn-warning]="user.aktif"
                                     [class.btn-success]="!user.aktif"
                                     (click)="toggleActive(user)" 
-                                    [title]="user.aktif ? 'Pasif Et' : 'Aktif Et'">
+                                    [title]="user.aktif ? 'Kullanıcıyı Pasif Et' : 'Kullanıcıyı Aktif Et'">
                               <i class="bx" [class.bx-lock]="user.aktif" [class.bx-lock-open]="!user.aktif"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger" (click)="deleteUser(user)" title="Sil">
-                              <i class="bx bx-trash"></i>
+                            <button class="btn btn-sm btn-danger" (click)="deleteUser(user)" title="Kullanıcıyı Sil">
+                              <i class="bx bx-trash-alt"></i>
                             </button>
                           </div>
                         </td>
@@ -169,7 +179,7 @@
           <div class="mb-3">
             <label class="form-label">Roller <span class="text-danger">*</span></label>
             <div class="row">
-              @for (role of roller; track role.id) {
+              @for (role of availableRoles; track role.id) {
                 <div class="col-md-4">
                   <div class="form-check">
                     <input class="form-check-input" type="checkbox" 
@@ -183,6 +193,11 @@
                 </div>
               }
             </div>
+            @if (!isSuperAdmin() && hasSuperAdminRole()) {
+              <small class="text-muted d-block mt-2">
+                <i class="bx bx-info-circle"></i> SuperAdmin rolü sadece sistem yöneticileri tarafından atanabilir.
+              </small>
+            }
           </div>
         </form>
       </div>
@@ -199,5 +214,43 @@
   </div>
 </div>
 @if (showModal) {
+  <div class="modal-backdrop fade show"></div>
+}
+
+<!-- Password Modal -->
+@if (showPasswordModal && generatedPasswordInfo) {
+  <div class="modal fade show" style="display: block;">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title d-flex align-items-center gap-2">
+            <iconify-icon icon="iconamoon:key-duotone" class="fs-20 text-info"></iconify-icon>
+            Yeni Parola Oluşturuldu
+          </h5>
+          <button type="button" class="btn-close" (click)="closePasswordModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2">
+            <strong>Kullanıcı:</strong> {{ generatedPasswordInfo.username }}
+          </p>
+          <div class="mb-3">
+            <label class="form-label">Yeni Parola</label>
+            <div class="input-group">
+              <input type="text" class="form-control font-monospace" [value]="generatedPasswordInfo.password" readonly>
+              <button class="btn btn-outline-secondary" type="button" (click)="copyToClipboard(generatedPasswordInfo.password)">
+                <i class="bx bx-copy"></i> Kopyala
+              </button>
+            </div>
+            <small class="text-muted d-block mt-2">
+              Bu şifre yalnızca bir kez görüntülenir. Kullanıcıya güvenli bir şekilde iletildiğinden emin olun.
+            </small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" (click)="closePasswordModal()">Tamam</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="modal-backdrop fade show"></div>
 }

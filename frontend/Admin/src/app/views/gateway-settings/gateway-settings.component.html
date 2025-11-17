@@ -1,0 +1,72 @@
+<div class="container-fluid">
+	<div class="row">
+		<div class="col-12">
+			<h4 class="mb-3">Sanal POS Ayarları</h4>
+		</div>
+	</div>
+
+	<div *ngIf="alertType" class="alert" [ngClass]="{'alert-success': alertType==='success', 'alert-danger': alertType==='danger'}">
+		{{ alertMessage }}
+	</div>
+
+	<form [formGroup]="form" (ngSubmit)="save()">
+		<div class="card mb-3">
+			<div class="card-body">
+				<div class="mb-3">
+					<label class="form-label">Sağlayıcı</label>
+					<select class="form-select" formControlName="provider">
+						<option value="simulator">Simülatör (test)</option>
+						<option value="paytr">PayTR</option>
+						<option value="iyzico">iyzico</option>
+					</select>
+				</div>
+
+				<div *ngIf="provider==='paytr'" class="row g-3">
+					<div class="col-md-4">
+						<label class="form-label">Merchant ID</label>
+						<input class="form-control" formControlName="paytrMerchantId" placeholder="Merchant ID">
+					</div>
+					<div class="col-md-4">
+						<label class="form-label">Merchant Key</label>
+						<input class="form-control" formControlName="paytrMerchantKey" placeholder="Merchant Key">
+					</div>
+					<div class="col-md-4">
+						<label class="form-label">Merchant Salt</label>
+						<input class="form-control" formControlName="paytrMerchantSalt" placeholder="Merchant Salt">
+					</div>
+				</div>
+
+				<div *ngIf="provider==='iyzico'" class="row g-3">
+					<div class="col-md-4">
+						<label class="form-label">API Key</label>
+						<input class="form-control" formControlName="iyzicoApiKey" placeholder="API Key">
+					</div>
+					<div class="col-md-4">
+						<label class="form-label">Secret Key</label>
+						<input class="form-control" formControlName="iyzicoSecretKey" placeholder="Secret Key">
+					</div>
+					<div class="col-md-4">
+						<label class="form-label">Base URL</label>
+						<input class="form-control" formControlName="iyzicoBaseUrl" placeholder="https://api.iyzipay.com">
+					</div>
+				</div>
+			</div>
+
+			<div class="card-footer text-end">
+				<button class="btn btn-primary" type="submit" [disabled]="saving">
+					Kaydet
+				</button>
+			</div>
+		</div>
+	</form>
+</div>
+
+
+
+
+
+
+
+
+
+

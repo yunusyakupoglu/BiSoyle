@@ -1,0 +1,169 @@
+<div class="container-xxl">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h4 class="card-title mb-1">Giderler</h4>
+            <p class="text-muted mb-0">Firma giderlerini yönet</p>
+          </div>
+          <button class="btn btn-primary" (click)="openCreateModal()">
+            <i class="mdi mdi-plus"></i> Yeni Gider
+          </button>
+        </div>
+        <div class="card-body">
+          @if (loading) {
+            <div class="text-center py-5">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Yükleniyor...</span>
+              </div>
+            </div>
+          } @else if (error) {
+            <div class="alert alert-danger">{{ error }}</div>
+          } @else {
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>ID</th>
+                    <th>Gider Adı</th>
+                    <th>Kategori</th>
+                    <th>Tutar</th>
+                    <th>Açıklama</th>
+                    <th>Tarih</th>
+                    <th class="text-end">İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (giderler.length === 0) {
+                    <tr>
+                      <td colspan="7" class="text-center py-5">
+                        <i class="mdi mdi-currency-usd fs-1 text-muted"></i>
+                        <p class="text-muted mt-2 mb-3">Henüz gider bulunmuyor.</p>
+                        <button class="btn btn-primary" (click)="openCreateModal()">
+                          <i class="mdi mdi-plus"></i> İlk Gideri Ekle
+                        </button>
+                      </td>
+                    </tr>
+                  } @else {
+                    @for (gider of giderler; track gider.id) {
+                      <tr>
+                        <td><strong>#{{ gider.id }}</strong></td>
+                        <td><strong>{{ gider.giderAdi }}</strong></td>
+                        <td>
+                          @if (gider.kategori) {
+                            <span class="badge bg-info">{{ gider.kategori }}</span>
+                          } @else {
+                            <span class="text-muted">-</span>
+                          }
+                        </td>
+                        <td><strong class="text-danger">{{ formatCurrency(gider.tutar) }}</strong></td>
+                        <td><small class="text-muted">{{ gider.aciklama || '-' }}</small></td>
+                        <td><small>{{ formatDate(gider.olusturmaTarihi) }}</small></td>
+                        <td class="text-end">
+                          <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-light" (click)="openEditModal(gider)" title="Düzenle">
+                              <i class="mdi mdi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" (click)="deleteExpense(gider.id)" title="Sil">
+                              <i class="mdi mdi-delete"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+@if (showModal) {
+  <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            {{ editingExpense ? 'Gider Düzenle' : 'Yeni Gider Ekle' }}
+          </h5>
+          <button type="button" class="btn-close" (click)="closeModal()"></button>
+        </div>
+        <div class="modal-body">
+          <form (ngSubmit)="saveExpense()">
+            <div class="mb-3">
+              <label class="form-label">Gider Adı <span class="text-danger">*</span></label>
+              <input 
+                type="text" 
+                class="form-control" 
+                [(ngModel)]="formData.giderAdi" 
+                name="giderAdi"
+                placeholder="Örn: Kira Ödemesi"
+                required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Kategori</label>
+              <select 
+                class="form-select" 
+                [(ngModel)]="formData.kategori" 
+                name="kategori">
+                <option value="">Kategori Seçin</option>
+                @for (kategori of kategoriSecenekleri; track kategori) {
+                  <option [value]="kategori">{{ kategori }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Tutar (₺) <span class="text-danger">*</span></label>
+              <input 
+                type="number" 
+                class="form-control" 
+                [(ngModel)]="formData.tutar" 
+                name="tutar"
+                step="0.01"
+                min="0.01"
+                placeholder="0.00"
+                required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Açıklama</label>
+              <textarea 
+                class="form-control" 
+                [(ngModel)]="formData.aciklama" 
+                name="aciklama"
+                rows="3"
+                placeholder="Gider hakkında açıklama..."></textarea>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" (click)="closeModal()">İptal</button>
+              <button type="submit" class="btn btn-primary" [disabled]="saving">
+                @if (saving) {
+                  <span class="spinner-border spinner-border-sm me-1"></span>
+                }
+                {{ editingExpense ? 'Güncelle' : 'Kaydet' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+
+
+
+
+
+
+
+

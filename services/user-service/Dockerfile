@@ -23,3 +23,26 @@ ENTRYPOINT ["dotnet", "BiSoyle.User.Service.dll"]
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

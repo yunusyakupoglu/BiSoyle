@@ -119,14 +119,88 @@
               </div>
             </div>
             
+            <!-- Ses Kaydedici -->
             <div class="mb-3">
-              <label class="form-label" for="enroll-file">Ses Dosyası (WAV/MP3)</label>
-              <input type="file" class="form-control" id="enroll-file" (change)="onEnrollFileChange($event)" accept="audio/*">
+              <label class="form-label">Ses Kaydı</label>
+              <div class="card border">
+                <div class="card-body">
+                  <!-- Kayıt Durumu -->
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                      <span class="badge" [ngClass]="isRecording ? 'bg-danger' : 'bg-secondary'">
+                        <span *ngIf="isRecording">🔴 Kayıt Yapılıyor...</span>
+                        <span *ngIf="!isRecording && recordCount === 0">Hazır</span>
+                        <span *ngIf="!isRecording && recordCount > 0 && recordCount < 8">Kayıt {{ recordCount }}/8</span>
+                        <span *ngIf="!isRecording && recordCount >= 8">🎉 Hazır!</span>
+                      </span>
+                    </div>
+                    <div class="text-muted small">
+                      <span *ngIf="currentRecordingTime > 0">{{ currentRecordingTime }}s / 10s</span>
+                    </div>
+                  </div>
+
+                  <!-- Kayıt Butonları -->
+                  <div class="d-flex gap-2 mb-3">
+                    <button 
+                      type="button" 
+                      class="btn btn-primary" 
+                      (click)="startRecording()"
+                      [disabled]="isRecording || recordCount >= 8 || !enrollName">
+                      <iconify-icon icon="iconamoon:player-record-duotone" class="me-1"></iconify-icon>
+                      Kayıt Başlat (10s)
+                    </button>
+                    <button 
+                      type="button" 
+                      class="btn btn-danger" 
+                      (click)="stopRecording()"
+                      [disabled]="!isRecording">
+                      <iconify-icon icon="iconamoon:player-stop-duotone" class="me-1"></iconify-icon>
+                      Durdur
+                    </button>
+                    <button 
+                      type="button" 
+                      class="btn btn-warning" 
+                      (click)="resetRecordings()"
+                      [disabled]="isRecording || recordCount === 0">
+                      <iconify-icon icon="iconamoon:refresh-duotone" class="me-1"></iconify-icon>
+                      Sıfırla
+                    </button>
+                  </div>
+
+                  <!-- Kayıt Listesi -->
+                  <div *ngIf="recordedChunks.length > 0" class="mb-3">
+                    <small class="text-muted d-block mb-2">Kaydedilen Sesler:</small>
+                    <div class="list-group">
+                      <div *ngFor="let chunk of recordedChunks; let i = index" 
+                           class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Kayıt {{ i + 1 }} (10 saniye)</span>
+                        <button 
+                          type="button" 
+                          class="btn btn-sm btn-link text-danger p-0"
+                          (click)="removeRecording(i)"
+                          [disabled]="isRecording">
+                          <iconify-icon icon="iconamoon:trash-duotone"></iconify-icon>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Manuel Dosya Yükleme (Alternatif) -->
+                  <div class="mt-3 pt-3 border-top">
+                    <small class="text-muted d-block mb-2">veya Manuel Dosya Yükle:</small>
+                    <input type="file" class="form-control form-control-sm" id="enroll-file" (change)="onEnrollFileChange($event)" accept="audio/*">
+                  </div>
+                </div>
+              </div>
             </div>
             
-            <button type="button" class="btn btn-success" (click)="enrollSpeaker()">
+            <button 
+              type="button" 
+              class="btn btn-success" 
+              (click)="enrollSpeaker()"
+              [disabled]="(!enrollFile && recordedChunks.length < 5) || !enrollName || isRecording">
               <iconify-icon icon="iconamoon:check-duotone" class="me-1"></iconify-icon>
-              Kaydet
+              Kaydet ({{ recordedChunks.length > 0 ? recordedChunks.length + ' kayıt' : 'Dosya' }})
             </button>
           </form>
           
@@ -140,21 +214,78 @@
       <div class="card">
         <div class="card-header">
           <h4 class="card-title">🔍 Konuşmacı Tanıma (Dosya)</h4>
+          <small class="text-muted">Ses dosyasını sistemdeki kayıtlı konuşmacılarla karşılaştırır</small>
         </div>
         <div class="card-body">
+          <!-- Kayıtlı Konuşmacı Bilgisi -->
+          <div *ngIf="enrolledSpeakers.length > 0" class="alert alert-info mb-3">
+            <iconify-icon icon="iconamoon:info-duotone" class="me-1"></iconify-icon>
+            <strong>Sistemde {{ enrolledSpeakers.length }} kayıtlı konuşmacı var.</strong>
+            <br><small>Seçilen dosya bu konuşmacılarla karşılaştırılacak.</small>
+          </div>
+          
+          <div *ngIf="enrolledSpeakers.length === 0" class="alert alert-warning mb-3">
+            <iconify-icon icon="iconamoon:warning-duotone" class="me-1"></iconify-icon>
+            <strong>Uyarı:</strong> Sistemde kayıtlı konuşmacı bulunmuyor. Önce kişi kaydı yapın.
+          </div>
+          
           <form>
             <div class="mb-3">
               <label class="form-label" for="identify-file">Tanımlanacak Ses Dosyası</label>
               <input type="file" class="form-control" id="identify-file" (change)="onIdentifyFileChange($event)" accept="audio/*">
+              <small class="text-muted">Ses dosyası sistemdeki tüm kayıtlı konuşmacılarla karşılaştırılacak</small>
             </div>
             
-            <button type="button" class="btn btn-primary" (click)="identifySpeaker()">
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              (click)="identifySpeaker()"
+              [disabled]="!identifyFile || isIdentifying || enrolledSpeakers.length === 0">
+              <span *ngIf="isIdentifying" class="spinner-border spinner-border-sm me-2"></span>
               <iconify-icon icon="iconamoon:search-duotone" class="me-1"></iconify-icon>
-              Tanımla
+              {{ isIdentifying ? 'Analiz Ediliyor...' : 'Tanımla' }}
             </button>
           </form>
           
           <div *ngIf="identifyResult" class="alert alert-{{identifyResultType}} mt-3" [innerHTML]="identifyResult"></div>
+          
+          <!-- Detaylı Sonuçlar Tablosu -->
+          <div *ngIf="identifyTop.length > 0" class="mt-3">
+            <h6 class="mb-2">📊 Tüm Konuşmacılar ile Karşılaştırma Sonuçları:</h6>
+            <div class="table-responsive">
+              <table class="table table-hover table-sm">
+                <thead>
+                  <tr>
+                    <th>Konuşmacı</th>
+                    <th class="text-end">Benzerlik Skoru</th>
+                    <th class="text-center">Durum</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of identifyTop; let i = index" 
+                      [ngClass]="{'table-success': i === 0 && item[1] > 0.5, 'table-warning': i === 0 && item[1] <= 0.5}">
+                    <td>
+                      <iconify-icon icon="iconamoon:profile-duotone" class="me-1"></iconify-icon>
+                      {{ item[0] }}
+                    </td>
+                    <td class="text-end">
+                      <strong>{{ (item[1] * 100).toFixed(1) }}%</strong>
+                      <br><small class="text-muted">({{ item[1].toFixed(3) }})</small>
+                    </td>
+                    <td class="text-center">
+                      <span *ngIf="i === 0 && item[1] > 0.5" class="badge bg-success">Eşleşti</span>
+                      <span *ngIf="i === 0 && item[1] <= 0.5" class="badge bg-warning">Düşük Skor</span>
+                      <span *ngIf="i > 0" class="badge bg-secondary">Alternatif</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <small class="text-muted">
+              <iconify-icon icon="iconamoon:info-duotone" class="me-1"></iconify-icon>
+              Skor 0.5'in üzerindeyse konuşmacı tanımlanmış sayılır.
+            </small>
+          </div>
         </div>
       </div>
     </div>
